@@ -3,10 +3,21 @@
 A lightweight dashboard for MQTT brokers that tracks nodes, roles, and broker telemetry in real time.
 It mirrors the MQTT settings used in `mesh-live-map` and adds a live node table plus $SYS metrics.
 
-## Quick start
+## Quick start (recommended: Docker)
 
 ```bash
-cd /home/yellowcooln/mqtt-dashboard/backend
+git clone https://github.com/yellowcooln/meshcore-mqtt-dashboard
+cd meshcore-mqtt-dashboard
+docker compose up -d --build
+```
+
+Open `http://localhost:8081` (or set `WEB_PORT` in your environment).
+
+## Local run (Python)
+
+```bash
+git clone https://github.com/yellowcooln/meshcore-mqtt-dashboard
+cd meshcore-mqtt-dashboard/backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -14,15 +25,6 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
 ```
 
 Open `http://localhost:8081`.
-
-## Docker
-
-```bash
-cd /home/yellowcooln/mqtt-dashboard
-docker compose up -d --build
-```
-
-Open `http://localhost:8081` (or set `WEB_PORT` in your environment).
 
 ## Configuration
 
