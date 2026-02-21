@@ -38,7 +38,7 @@ Copy `.env.example` into your environment or export variables before running. Th
 - `MQTT_WS_PATH`
 - `MQTT_TLS`, `MQTT_TLS_INSECURE`, `MQTT_CA_CERT`
 - `MQTT_CLIENT_ID`
-- `MQTT_TOPIC` (node data)
+- `MQTT_TOPIC` (node data; comma-separated supported, e.g. `meshcore/ABC/#,meshcore/DEF/#`)
 - `MQTT_SYS_TOPIC` ($SYS telemetry)
 - `MQTT_ONLINE_SECONDS` (online window)
 - `WEB_PORT` (host port for Docker)

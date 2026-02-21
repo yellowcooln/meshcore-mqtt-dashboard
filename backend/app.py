@@ -33,7 +33,19 @@ MQTT_TLS = os.getenv("MQTT_TLS", "false").lower() == "true"
 MQTT_TLS_INSECURE = os.getenv("MQTT_TLS_INSECURE", "false").lower() == "true"
 MQTT_CA_CERT = os.getenv("MQTT_CA_CERT", "")
 MQTT_CLIENT_ID = os.getenv("MQTT_CLIENT_ID", "")
-MQTT_TOPIC = os.getenv("MQTT_TOPIC", "meshcore/#")
+
+# Support multiple MQTT topics separated by commas.  MQTT_TOPIC_RAW holds
+# the raw comma-separated string from the environment. MQTT_TOPICS is a list of
+# stripped topic strings. For backwards compatibility, MQTT_TOPIC is set to the
+# first topic in the list (if any) so existing code referring to MQTT_TOPIC
+# continues to work.
+MQTT_TOPIC_RAW = os.getenv("MQTT_TOPIC", "meshcore/#")
+MQTT_TOPICS = [t.strip() for t in MQTT_TOPIC_RAW.split(",") if t.strip()]
+if MQTT_TOPICS:
+  MQTT_TOPIC = MQTT_TOPICS[0]
+else:
+  MQTT_TOPIC = ""
+
 MQTT_SYS_TOPIC = os.getenv("MQTT_SYS_TOPIC", "$SYS/#")
 MQTT_AUTH_TOKEN = os.getenv("MQTT_AUTH_TOKEN", "")
 MQTT_AUTH_TOKEN_HEADER = os.getenv("MQTT_AUTH_TOKEN_HEADER", "Authorization")
@@ -231,7 +243,8 @@ broker_state: Dict[str, Any] = {
   "transport": MQTT_TRANSPORT,
   "ws_path": MQTT_WS_PATH,
   "tls": MQTT_TLS,
-  "topic": MQTT_TOPIC,
+  # Store the raw comma-separated topic string to reflect all subscribed topics
+  "topic": MQTT_TOPIC_RAW,
   "sys_topic": MQTT_SYS_TOPIC,
   "client_id": MQTT_CLIENT_ID,
   "title": DASH_TITLE,
@@ -673,8 +686,11 @@ def mqtt_on_connect(client, userdata, flags, reason_code, properties=None):
     broker_state["connected"] = True
     broker_state["last_connect"] = now
     broker_state["last_error"] = ""
-  if MQTT_TOPIC:
-    client.subscribe(MQTT_TOPIC, qos=0)
+  # Subscribe to every topic in MQTT_TOPICS. This allows multiple topics to be
+  # specified using a comma-separated string in MQTT_TOPIC_RAW.
+  for _topic in MQTT_TOPICS:
+    if _topic:
+      client.subscribe(_topic, qos=0)
   if MQTT_SYS_TOPIC:
     client.subscribe(MQTT_SYS_TOPIC, qos=0)
   _queue_broadcast({"type": "broker_status", "broker": dict(broker_state)})
