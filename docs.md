@@ -26,6 +26,10 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 - `DASH_API_TOKEN` protects `/snapshot`, `/stats`, and `/packets`.
 - `/` and `/ws` remain accessible so users can view the live dashboard without a token URL.
 
+## Privacy / Redaction
+- Sensitive IP and MAC data is redacted from packet payload text/details and API responses.
+- `client_version` version-style values (such as `meshcoretomqtt/1.0.8.0-e52c5ed`) are preserved.
+
 ## Packet Retention
 - Packets are stored in SQLite and purged on write based on `PACKET_RETENTION_SECONDS`.
 - Retention is clamped to a maximum of 24 hours.
@@ -41,4 +45,4 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 - Broker detail shows configuration, auth mode, and packet retention.
 
 ## Releases
-- Change history is tracked in `CHANGES.MD` (latest first).
+- Change history is tracked in [CHANGES.MD](./CHANGES.MD) (latest first).

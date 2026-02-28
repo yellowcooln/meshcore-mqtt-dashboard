@@ -2,6 +2,7 @@
 
 A lightweight dashboard for MQTT brokers that tracks nodes, roles, and broker telemetry in real time.
 It mirrors the MQTT settings used in `mesh-live-map` and adds a live node table plus $SYS metrics.
+Latest release notes: [CHANGES.MD](./CHANGES.MD)
 
 ![Dashboard preview](./docs/example.png)
 
@@ -57,12 +58,13 @@ Copy `.env.example` into your environment or export variables before running. Th
 - Node ids are inferred from payload fields or topic segments. Customize `NODE_ID_KEYS` and `TOPIC_SUFFIXES` in `backend/app.py` if your topics differ.
 - $SYS metrics only appear if enabled and the broker exposes them.
 - IP and MAC values in payload text/details are redacted before they are stored or sent to the UI.
+- `client_version` dotted version values (for example `1.0.8.0-e52c5ed`) are preserved.
 - If `DASH_API_TOKEN` is set, direct API calls to `/snapshot`, `/stats`, and `/packets` without token return `401`.
 - Dashboard page (`/`) and websocket feed (`/ws`) remain accessible so viewers can still use the UI.
 
 ## Releases
 
-- Change log: `CHANGES.MD`
+- Change log: [CHANGES.MD](./CHANGES.MD)
 
 ---
 

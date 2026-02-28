@@ -28,8 +28,9 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
 - No automated test suite is present.
 - Validate changes manually with:
   - `http://localhost:8081/snapshot`
+  - `http://localhost:8081/stats`
   - `http://localhost:8081/packets?limit=50`
-- If `DASH_API_TOKEN` is enabled locally, include `?token=<value>` for `/snapshot` and `/packets` tests.
+- If `DASH_API_TOKEN` is enabled locally, include `?token=<value>` or send header `X-Dashboard-Token` for `/snapshot`, `/stats`, and `/packets`.
 
 ## Configuration Changes
 - Update `.env.example` when you add or modify environment variables.

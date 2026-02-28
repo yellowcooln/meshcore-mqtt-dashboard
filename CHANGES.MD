@@ -5,6 +5,7 @@
 - Kept the dashboard page (`/`) and websocket stream (`/ws`) publicly loadable for browser access.
 - Added `SYS_TOPICS_ENABLED` to toggle `$SYS` subscription/processing and hide/show the `$SYS` panel in the UI.
 - Added redaction of sensitive IP/MAC values from payload text/details before exposing data to UI/API.
+- Preserved `client_version` dotted version strings (for example `1.0.8.0-e52c5ed`) while keeping IP/MAC redaction for sensitive fields.
 - Added read-time redaction for packet history responses so older DB rows are also sanitized.
 - New env vars:
   - `DASH_API_TOKEN`: token required for protected API routes when set.

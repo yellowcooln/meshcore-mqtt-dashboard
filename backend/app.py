@@ -200,6 +200,9 @@ SENSITIVE_DETAIL_KEYS = {
   "mac",
   "macaddress",
 }
+IPV4_REDACTION_EXEMPT_KEYS = {
+  "clientversion",
+}
 IPV4_PATTERN = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 MAC_PATTERN = re.compile(r"\b[0-9A-Fa-f]{2}(?::|-){5}[0-9A-Fa-f]{2}\b")
 
@@ -301,10 +304,13 @@ def _is_sensitive_key(key: str) -> bool:
   return normalized in SENSITIVE_DETAIL_KEYS
 
 
-def _redact_sensitive_text(value: str) -> str:
+def _redact_sensitive_text(value: str, key_hint: Optional[str] = None) -> str:
   if not value:
     return ""
-  redacted = IPV4_PATTERN.sub("[redacted-ip]", value)
+  normalized_hint = _normalize_key(key_hint or "")
+  redacted = value
+  if normalized_hint not in IPV4_REDACTION_EXEMPT_KEYS:
+    redacted = IPV4_PATTERN.sub("[redacted-ip]", redacted)
   redacted = MAC_PATTERN.sub("[redacted-mac]", redacted)
   return redacted
 
@@ -320,7 +326,7 @@ def _redact_sensitive_payload(value: Any, key_hint: Optional[str] = None) -> Any
   if isinstance(value, list):
     return [_redact_sensitive_payload(item, key_hint) for item in value]
   if isinstance(value, str):
-    return _redact_sensitive_text(value)
+    return _redact_sensitive_text(value, key_hint)
   return value
 
 
@@ -497,7 +503,7 @@ def _extract_details(payload: Any) -> Dict[str, Any]:
     if value is None:
       continue
     if isinstance(value, (str, int, float, bool)):
-      details[key] = _redact_sensitive_text(value) if isinstance(value, str) else value
+      details[key] = _redact_sensitive_text(value, key) if isinstance(value, str) else value
   for key, value in payload.items():
     if key in DETAIL_SKIP_KEYS:
       continue
@@ -510,7 +516,7 @@ def _extract_details(payload: Any) -> Dict[str, Any]:
         continue
       if len(details) >= 12:
         break
-      details[key] = _redact_sensitive_text(value) if isinstance(value, str) else value
+      details[key] = _redact_sensitive_text(value, key) if isinstance(value, str) else value
   return details
 
 
