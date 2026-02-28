@@ -40,6 +40,9 @@ Copy `.env.example` into your environment or export variables before running. Th
 - `MQTT_CLIENT_ID`
 - `MQTT_TOPIC` (node data; comma-separated supported, e.g. `meshcore/ABC/#,meshcore/DEF/#`)
 - `MQTT_SYS_TOPIC` ($SYS telemetry)
+- `SYS_TOPICS_ENABLED` (`true`/`false` toggle for $SYS subscription + dashboard display)
+- `DASH_API_TOKEN` (optional token required for `/snapshot`, `/stats`, and `/packets`)
+- `DASH_API_TOKEN_HEADER` (optional token header name; default `X-Dashboard-Token`)
 - `MQTT_ONLINE_SECONDS` (online window)
 - `WEB_PORT` (host port for Docker)
 - `MQTT_AUTH_TOKEN` (optional auth token for websocket headers)
@@ -52,7 +55,14 @@ Copy `.env.example` into your environment or export variables before running. Th
 ## Notes
 
 - Node ids are inferred from payload fields or topic segments. Customize `NODE_ID_KEYS` and `TOPIC_SUFFIXES` in `backend/app.py` if your topics differ.
-- $SYS metrics only appear if the broker exposes them.
+- $SYS metrics only appear if enabled and the broker exposes them.
+- IP and MAC values in payload text/details are redacted before they are stored or sent to the UI.
+- If `DASH_API_TOKEN` is set, direct API calls to `/snapshot`, `/stats`, and `/packets` without token return `401`.
+- Dashboard page (`/`) and websocket feed (`/ws`) remain accessible so viewers can still use the UI.
+
+## Releases
+
+- Change log: `CHANGES.MD`
 
 ---
 

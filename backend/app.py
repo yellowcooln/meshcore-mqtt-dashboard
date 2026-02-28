@@ -1,14 +1,16 @@
 import asyncio
+import hmac
 import json
 import os
+import re
 import sqlite3
 import threading
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Mapping, Optional, Set
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import paho.mqtt.client as mqtt
@@ -47,6 +49,9 @@ else:
   MQTT_TOPIC = ""
 
 MQTT_SYS_TOPIC = os.getenv("MQTT_SYS_TOPIC", "$SYS/#")
+SYS_TOPICS_ENABLED = os.getenv("SYS_TOPICS_ENABLED", "true").lower() == "true"
+DASH_API_TOKEN = os.getenv("DASH_API_TOKEN", "")
+DASH_API_TOKEN_HEADER = os.getenv("DASH_API_TOKEN_HEADER", "X-Dashboard-Token")
 MQTT_AUTH_TOKEN = os.getenv("MQTT_AUTH_TOKEN", "")
 MQTT_AUTH_TOKEN_HEADER = os.getenv("MQTT_AUTH_TOKEN_HEADER", "Authorization")
 MQTT_AUTH_TOKEN_SCHEME = os.getenv("MQTT_AUTH_TOKEN_SCHEME", "Bearer")
@@ -111,9 +116,6 @@ DETAIL_KEYS = (
   "version",
   "model",
   "vendor",
-  "ip",
-  "mac",
-  "macAddress",
   "lat",
   "lon",
   "alt",
@@ -182,6 +184,24 @@ ROLE_HINTS = (
   ("companion", "companion"),
   ("portable", "companion"),
 )
+SENSITIVE_DETAIL_KEYS = {
+  "ip",
+  "ipaddress",
+  "ipaddr",
+  "publicip",
+  "privateip",
+  "clientip",
+  "remoteip",
+  "sourceip",
+  "destip",
+  "destinationip",
+  "recentip",
+  "recentips",
+  "mac",
+  "macaddress",
+}
+IPV4_PATTERN = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+MAC_PATTERN = re.compile(r"\b[0-9A-Fa-f]{2}(?::|-){5}[0-9A-Fa-f]{2}\b")
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -246,6 +266,8 @@ broker_state: Dict[str, Any] = {
   # Store the raw comma-separated topic string to reflect all subscribed topics
   "topic": MQTT_TOPIC_RAW,
   "sys_topic": MQTT_SYS_TOPIC,
+  "sys_topics_enabled": SYS_TOPICS_ENABLED,
+  "api_token_enabled": bool(DASH_API_TOKEN),
   "client_id": MQTT_CLIENT_ID,
   "title": DASH_TITLE,
   "online_seconds": MQTT_ONLINE_SECONDS,
@@ -266,6 +288,88 @@ def _sanitize_text(value: str, limit: int = 160) -> str:
   if len(cleaned) <= limit:
     return cleaned
   return f"{cleaned[:limit - 3]}..."
+
+
+def _normalize_key(value: str) -> str:
+  if not value:
+    return ""
+  return "".join(ch for ch in value.lower() if ch.isalnum())
+
+
+def _is_sensitive_key(key: str) -> bool:
+  normalized = _normalize_key(key)
+  return normalized in SENSITIVE_DETAIL_KEYS
+
+
+def _redact_sensitive_text(value: str) -> str:
+  if not value:
+    return ""
+  redacted = IPV4_PATTERN.sub("[redacted-ip]", value)
+  redacted = MAC_PATTERN.sub("[redacted-mac]", redacted)
+  return redacted
+
+
+def _redact_sensitive_payload(value: Any, key_hint: Optional[str] = None) -> Any:
+  if key_hint and _is_sensitive_key(key_hint):
+    return "[redacted]"
+  if isinstance(value, dict):
+    sanitized: Dict[str, Any] = {}
+    for key, nested_value in value.items():
+      sanitized[key] = _redact_sensitive_payload(nested_value, key)
+    return sanitized
+  if isinstance(value, list):
+    return [_redact_sensitive_payload(item, key_hint) for item in value]
+  if isinstance(value, str):
+    return _redact_sensitive_text(value)
+  return value
+
+
+def _redact_payload_json_text(value: str) -> str:
+  if not value:
+    return ""
+  try:
+    parsed = json.loads(value)
+  except json.JSONDecodeError:
+    return _redact_sensitive_text(value)
+  redacted = _redact_sensitive_payload(parsed)
+  return json.dumps(redacted, ensure_ascii=True)
+
+
+def _extract_bearer_token(value: Optional[str]) -> Optional[str]:
+  if not value:
+    return None
+  parts = value.split(" ", 1)
+  if len(parts) != 2:
+    return None
+  if parts[0].strip().lower() != "bearer":
+    return None
+  token = parts[1].strip()
+  return token or None
+
+
+def _is_api_token_valid(candidate: Optional[str]) -> bool:
+  if not DASH_API_TOKEN:
+    return True
+  if not candidate:
+    return False
+  return hmac.compare_digest(candidate, DASH_API_TOKEN)
+
+
+def _is_api_authorized(headers: Mapping[str, str], query_params: Mapping[str, str]) -> bool:
+  if not DASH_API_TOKEN:
+    return True
+  header_token = headers.get(DASH_API_TOKEN_HEADER)
+  if _is_api_token_valid(header_token):
+    return True
+  bearer_token = _extract_bearer_token(headers.get("authorization"))
+  if _is_api_token_valid(bearer_token):
+    return True
+  query_token = query_params.get("token")
+  return _is_api_token_valid(query_token)
+
+
+def _is_protected_path(path: str) -> bool:
+  return path in ("/snapshot", "/stats", "/packets")
 
 
 def _coerce_sys_value(text: str) -> Any:
@@ -289,8 +393,13 @@ def _decode_payload(payload: bytes) -> Dict[str, Any]:
   if stripped.startswith("{") or stripped.startswith("["):
     try:
       payload_obj = json.loads(stripped)
+      payload_obj = _redact_sensitive_payload(payload_obj)
+      text = json.dumps(payload_obj, ensure_ascii=True)
     except json.JSONDecodeError:
       payload_obj = None
+      text = _redact_sensitive_text(text)
+  else:
+    text = _redact_sensitive_text(text)
   return {
     "text": text,
     "json": payload_obj,
@@ -382,13 +491,17 @@ def _extract_details(payload: Any) -> Dict[str, Any]:
     return {}
   details: Dict[str, Any] = {}
   for key in DETAIL_KEYS:
+    if _is_sensitive_key(key):
+      continue
     value = payload.get(key)
     if value is None:
       continue
     if isinstance(value, (str, int, float, bool)):
-      details[key] = value
+      details[key] = _redact_sensitive_text(value) if isinstance(value, str) else value
   for key, value in payload.items():
     if key in DETAIL_SKIP_KEYS:
+      continue
+    if _is_sensitive_key(key):
       continue
     if key in details:
       continue
@@ -397,11 +510,13 @@ def _extract_details(payload: Any) -> Dict[str, Any]:
         continue
       if len(details) >= 12:
         break
-      details[key] = value
+      details[key] = _redact_sensitive_text(value) if isinstance(value, str) else value
   return details
 
 
 def _is_sys_topic(topic: str) -> bool:
+  if not SYS_TOPICS_ENABLED:
+    return False
   if not MQTT_SYS_TOPIC:
     return False
   if MQTT_SYS_TOPIC.startswith("$SYS"):
@@ -657,8 +772,8 @@ def _fetch_packets(limit: int, node_id: Optional[str]) -> Dict[str, Any]:
       "node_id": row[2],
       "name": row[3],
       "role": row[4],
-      "payload_text": row[5],
-      "payload_json": row[6],
+      "payload_text": _redact_sensitive_text(row[5] or ""),
+      "payload_json": _redact_payload_json_text(row[6] or ""),
     }
     for row in rows
   ]
@@ -691,7 +806,7 @@ def mqtt_on_connect(client, userdata, flags, reason_code, properties=None):
   for _topic in MQTT_TOPICS:
     if _topic:
       client.subscribe(_topic, qos=0)
-  if MQTT_SYS_TOPIC:
+  if SYS_TOPICS_ENABLED and MQTT_SYS_TOPIC:
     client.subscribe(MQTT_SYS_TOPIC, qos=0)
   _queue_broadcast({"type": "broker_status", "broker": dict(broker_state)})
 
@@ -826,6 +941,14 @@ async def on_shutdown():
   stop_mqtt()
   _close_packet_db()
   await broadcast_queue.put(None)
+
+
+@app.middleware("http")
+async def api_token_middleware(request: Request, call_next):
+  if _is_protected_path(request.url.path):
+    if not _is_api_authorized(request.headers, request.query_params):
+      return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+  return await call_next(request)
 
 
 @app.get("/")

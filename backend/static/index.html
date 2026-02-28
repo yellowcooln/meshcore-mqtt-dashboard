@@ -585,13 +585,15 @@
           <h2 style="margin-top: 24px;">Broker Detail</h2>
           <div id="broker-detail"></div>
 
-          <h2 style="margin-top: 24px;">$SYS Topics</h2>
-          <input type="text" id="sys-filter" placeholder="Filter $SYS topics" style="width: 100%; margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(93, 75, 52, 0.18);" />
-          <div class="sys-list" id="sys-list"></div>
+          <div id="sys-panel" style="margin-top: 24px;">
+            <h2>$SYS Topics</h2>
+            <input type="text" id="sys-filter" placeholder="Filter $SYS topics" style="width: 100%; margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(93, 75, 52, 0.18);" />
+            <div class="sys-list" id="sys-list"></div>
+          </div>
         </div>
       </section>
 
-      <p class="footer-note">Streaming MQTT data in real time. $SYS metrics appear when the broker exposes them.</p>
+      <p class="footer-note">Streaming MQTT data in real time. $SYS metrics appear when enabled and exposed by the broker.</p>
     </div>
 
     <script>
@@ -616,6 +618,7 @@
         nodeTable: document.getElementById("node-table"),
         nodeDetail: document.getElementById("node-detail"),
         brokerDetail: document.getElementById("broker-detail"),
+        sysPanel: document.getElementById("sys-panel"),
         sysList: document.getElementById("sys-list"),
         nodeFilter: document.getElementById("node-filter"),
         onlineOnly: document.getElementById("online-only"),
@@ -745,6 +748,8 @@
         const tls = state.broker.tls ? "TLS" : "Plain";
         const retentionLabel = formatRetention(state.broker.packet_retention_seconds);
         elements.brokerMeta.textContent = `${transport.toUpperCase()} · ${tls} · Retention ${retentionLabel}`;
+        const sysEnabled = state.broker.sys_topics_enabled !== false;
+        elements.sysPanel.style.display = sysEnabled ? "block" : "none";
         if (state.broker.title) {
           elements.title.textContent = state.broker.title;
           document.title = state.broker.title;
@@ -871,7 +876,7 @@
           ["TLS", broker.tls ? "Enabled" : "Disabled"],
           ["WS Path", broker.ws_path || "--"],
           ["Topic", broker.topic || "--"],
-          ["Sys Topic", broker.sys_topic || "--"],
+          ["Sys Topic", broker.sys_topics_enabled === false ? "Disabled" : (broker.sys_topic || "--")],
           ["Client ID", broker.client_id || "--"],
           ["Packet Retention", formatRetention(broker.packet_retention_seconds)],
           ["Last Connect", formatClock(broker.last_connect)],
@@ -923,15 +928,6 @@
         } else {
           document.documentElement.removeAttribute("data-theme");
           elements.themeToggle.textContent = "Light Mode";
-        }
-        try {
-          const response = await fetch("/snapshot");
-          if (response.ok) {
-            const data = await response.json();
-            applySnapshot(data);
-          }
-        } catch (error) {
-          console.warn("Snapshot load failed", error);
         }
 
         const scheme = location.protocol === "https:" ? "wss" : "ws";

@@ -29,7 +29,9 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
 - Validate changes manually with:
   - `http://localhost:8081/snapshot`
   - `http://localhost:8081/packets?limit=50`
+- If `DASH_API_TOKEN` is enabled locally, include `?token=<value>` for `/snapshot` and `/packets` tests.
 
 ## Configuration Changes
 - Update `.env.example` when you add or modify environment variables.
 - If you change data retention or node lifecycle behavior, update `docs.md`.
+- For user-visible behavior changes, update `CHANGES.MD` (newest version at top).

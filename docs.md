@@ -15,11 +15,16 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 - `docker compose logs -f mqtt-dashboard` (watch MQTT + app logs).
 - `curl -s http://localhost:8081/snapshot` (broker + node snapshot).
 - `curl -s http://localhost:8081/packets?limit=50` (recent packets).
+- If `DASH_API_TOKEN` is set, include `?token=<value>` (or send header `X-Dashboard-Token`) for `/snapshot`, `/stats`, and `/packets`.
 
 ## MQTT + Broker
 - Supports `tcp` or `websockets` with TLS.
 - Optional websocket auth token header (`MQTT_AUTH_TOKEN`, `MQTT_AUTH_TOKEN_HEADER`).
-- $SYS topics are optional and displayed when available.
+- $SYS topics are optional and displayed when available (`SYS_TOPICS_ENABLED=true`).
+
+## Dashboard API Token
+- `DASH_API_TOKEN` protects `/snapshot`, `/stats`, and `/packets`.
+- `/` and `/ws` remain accessible so users can view the live dashboard without a token URL.
 
 ## Packet Retention
 - Packets are stored in SQLite and purged on write based on `PACKET_RETENTION_SECONDS`.
@@ -34,3 +39,6 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 - Dark mode is default with a light mode toggle (saved in localStorage).
 - Node list focuses on status, name, and last seen only.
 - Broker detail shows configuration, auth mode, and packet retention.
+
+## Releases
+- Change history is tracked in `CHANGES.MD` (latest first).
