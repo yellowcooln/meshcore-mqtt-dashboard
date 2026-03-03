@@ -6,6 +6,8 @@ services:
       - "${WEB_PORT:-8081}:8081"
     environment:
       DASH_TITLE: "${DASH_TITLE:-MQTT Observatory}"
+      DASH_EXTERNAL_URL: "${DASH_EXTERNAL_URL:-}"
+      DASH_EXTERNAL_LABEL: "${DASH_EXTERNAL_LABEL:-External}"
       MQTT_HOST: "${MQTT_HOST:-localhost}"
       MQTT_PORT: "${MQTT_PORT:-1883}"
       MQTT_USERNAME: "${MQTT_USERNAME:-}"

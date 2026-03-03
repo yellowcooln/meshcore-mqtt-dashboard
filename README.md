@@ -42,8 +42,11 @@ Copy `.env.example` into your environment or export variables before running. Th
 - `MQTT_TOPIC` (node data; comma-separated supported, e.g. `meshcore/ABC/#,meshcore/DEF/#`)
 - `MQTT_SYS_TOPIC` ($SYS telemetry)
 - `SYS_TOPICS_ENABLED` (`true`/`false` toggle for $SYS subscription + dashboard display)
+- `DASH_TITLE` (dashboard title used in UI and share/embed metadata)
 - `DASH_API_TOKEN` (optional token required for `/snapshot`, `/stats`, and `/packets`)
 - `DASH_API_TOKEN_HEADER` (optional token header name; default `X-Dashboard-Token`)
+- `DASH_EXTERNAL_URL` (optional external link button in header; hidden when empty)
+- `DASH_EXTERNAL_LABEL` (button text for external link; default `External`)
 - `MQTT_ONLINE_SECONDS` (online window)
 - `WEB_PORT` (host port for Docker)
 - `MQTT_AUTH_TOKEN` (optional auth token for websocket headers)
@@ -61,6 +64,8 @@ Copy `.env.example` into your environment or export variables before running. Th
 - `client_version` dotted version values (for example `1.0.8.0-e52c5ed`) are preserved.
 - If `DASH_API_TOKEN` is set, direct API calls to `/snapshot`, `/stats`, and `/packets` without token return `401`.
 - Dashboard page (`/`) and websocket feed (`/ws`) remain accessible so viewers can still use the UI.
+- Share/embed metadata on `/` uses `DASH_TITLE` with description `Live node presence, roles, and broker telemetry.`.
+- The external header button only appears when `DASH_EXTERNAL_URL` is set to a valid `http` or `https` URL.
 
 ## Releases
 

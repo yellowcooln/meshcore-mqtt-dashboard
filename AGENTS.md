@@ -27,6 +27,8 @@
 
 ## Configuration & Operations
 - MQTT settings are configured via `.env` (`MQTT_HOST`, `MQTT_PORT`, `MQTT_TRANSPORT`, TLS, topics).
+- Dashboard branding/share metadata is set by `DASH_TITLE`.
+- Optional header external button is configured with `DASH_EXTERNAL_URL` and `DASH_EXTERNAL_LABEL`.
 - Packet retention is controlled by `PACKET_RETENTION_SECONDS` (clamped to 24h max).
 - Packet DB lives at `PACKET_DB_PATH` (default `/data/packets.db` in Docker).
 - Names are cached from the packet DB on startup.

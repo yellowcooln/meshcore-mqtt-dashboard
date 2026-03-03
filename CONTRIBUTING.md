@@ -30,6 +30,11 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
   - `http://localhost:8081/snapshot`
   - `http://localhost:8081/stats`
   - `http://localhost:8081/packets?limit=50`
+- Validate share/embed metadata with:
+  - `curl -s http://localhost:8081 | rg -n "og:title|og:description|twitter:title|twitter:description"`
+- Validate external button behavior:
+  - With empty `DASH_EXTERNAL_URL`, confirm the external header button is hidden.
+  - With valid `DASH_EXTERNAL_URL`, confirm the button appears with `DASH_EXTERNAL_LABEL`.
 - If `DASH_API_TOKEN` is enabled locally, include `?token=<value>` or send header `X-Dashboard-Token` for `/snapshot`, `/stats`, and `/packets`.
 
 ## Configuration Changes

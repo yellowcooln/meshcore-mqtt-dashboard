@@ -1,5 +1,14 @@
 # Changes
 
+## v1.2.0 - 2026-03-03
+- Added server-rendered share/embed metadata on `/` so previews use live config values.
+- Wired `title`, `og:title`, and `twitter:title` to `DASH_TITLE`.
+- Added optional external header button controlled by env vars with URL validation.
+- Updated docs to cover embeds, external link behavior, and manual verification steps.
+- New env vars:
+  - `DASH_EXTERNAL_URL`: optional external header button URL (must be `http` or `https`).
+  - `DASH_EXTERNAL_LABEL`: external header button label (default `External`).
+
 ## v1.1.0 - 2026-02-28
 - Added endpoint token protection for `/snapshot`, `/stats`, and `/packets` using `DASH_API_TOKEN`.
 - Kept the dashboard page (`/`) and websocket stream (`/ws`) publicly loadable for browser access.

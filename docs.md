@@ -26,6 +26,17 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 - `DASH_API_TOKEN` protects `/snapshot`, `/stats`, and `/packets`.
 - `/` and `/ws` remain accessible so users can view the live dashboard without a token URL.
 
+## Share / Embed Metadata
+- `/` is server-rendered so metadata is visible to crawlers and chat previews.
+- `title`, `og:title`, and `twitter:title` use `DASH_TITLE`.
+- `description`, `og:description`, and `twitter:description` use `Live node presence, roles, and broker telemetry.`.
+
+## Header External Link
+- Set `DASH_EXTERNAL_URL` to show an additional header button.
+- Set `DASH_EXTERNAL_LABEL` to customize the button text (default `External`).
+- Only `http`/`https` URLs are accepted.
+- If `DASH_EXTERNAL_URL` is empty (or invalid), the button is hidden.
+
 ## Privacy / Redaction
 - Sensitive IP and MAC data is redacted from packet payload text/details and API responses.
 - `client_version` version-style values (such as `meshcoretomqtt/1.0.8.0-e52c5ed`) are preserved.

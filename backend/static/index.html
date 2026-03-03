@@ -3,7 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MQTT Observatory</title>
+    <title>__DASH_TITLE__</title>
+    <meta name="description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="__DASH_TITLE__" />
+    <meta property="og:description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:url" content="__DASH_URL__" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="__DASH_TITLE__" />
+    <meta name="twitter:description" content="__DASH_DESCRIPTION__" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -521,11 +529,12 @@
     <div class="app">
       <header>
         <div class="title-block">
-          <h1 id="dash-title">MQTT Observatory</h1>
-          <p id="dash-subtitle">Live node presence, roles, and broker telemetry.</p>
+          <h1 id="dash-title">__DASH_TITLE__</h1>
+          <p id="dash-subtitle">__DASH_DESCRIPTION__</p>
         </div>
         <div class="header-actions">
           <a class="github-link" href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a>
+          <a class="github-link" id="external-link" href="#" target="_blank" rel="noopener" hidden>External</a>
           <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
           <div class="status-pill" id="status-pill">
             <span class="status-dot"></span>
@@ -624,6 +633,7 @@
         onlineOnly: document.getElementById("online-only"),
         sysFilter: document.getElementById("sys-filter"),
         themeToggle: document.getElementById("theme-toggle"),
+        externalLink: document.getElementById("external-link"),
       };
 
       let selectedNodeId = null;
@@ -753,6 +763,15 @@
         if (state.broker.title) {
           elements.title.textContent = state.broker.title;
           document.title = state.broker.title;
+        }
+        const externalUrl = (state.broker.external_url || "").trim();
+        if (externalUrl) {
+          elements.externalLink.hidden = false;
+          elements.externalLink.href = externalUrl;
+          elements.externalLink.textContent = state.broker.external_label || "External";
+        } else {
+          elements.externalLink.hidden = true;
+          elements.externalLink.removeAttribute("href");
         }
       }
 

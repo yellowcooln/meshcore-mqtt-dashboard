@@ -1,4 +1,5 @@
 import asyncio
+from html import escape as html_escape
 import hmac
 import json
 import os
@@ -6,12 +7,13 @@ import re
 import sqlite3
 import threading
 import time
+from urllib.parse import urlparse
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Dict, Mapping, Optional, Set
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import paho.mqtt.client as mqtt
 
@@ -59,6 +61,18 @@ MQTT_ONLINE_SECONDS = int(os.getenv("MQTT_ONLINE_SECONDS", "300"))
 SYS_TOPICS_LIMIT = int(os.getenv("SYS_TOPICS_LIMIT", "200"))
 STATS_WINDOW_SECONDS = int(os.getenv("STATS_WINDOW_SECONDS", "60"))
 DASH_TITLE = os.getenv("DASH_TITLE", "MQTT Observatory")
+DASH_DESCRIPTION = "Live node presence, roles, and broker telemetry."
+DASH_EXTERNAL_URL_RAW = os.getenv("DASH_EXTERNAL_URL", "").strip()
+_external_url_parsed = urlparse(DASH_EXTERNAL_URL_RAW) if DASH_EXTERNAL_URL_RAW else None
+if (
+  _external_url_parsed
+  and _external_url_parsed.scheme in ("http", "https")
+  and _external_url_parsed.netloc
+):
+  DASH_EXTERNAL_URL = DASH_EXTERNAL_URL_RAW
+else:
+  DASH_EXTERNAL_URL = ""
+DASH_EXTERNAL_LABEL = (os.getenv("DASH_EXTERNAL_LABEL", "External").strip() or "External")
 ROLE_OVERRIDES_FILE = os.getenv(
   "ROLE_OVERRIDES_FILE", os.path.join(DATA_DIR, "device_roles.json")
 )
@@ -220,6 +234,7 @@ last_packet_purge = 0.0
 name_cache: Dict[str, str] = {}
 
 role_overrides: Dict[str, str] = {}
+index_template_html: Optional[str] = None
 
 @dataclass
 class NodeState:
@@ -273,6 +288,8 @@ broker_state: Dict[str, Any] = {
   "api_token_enabled": bool(DASH_API_TOKEN),
   "client_id": MQTT_CLIENT_ID,
   "title": DASH_TITLE,
+  "external_url": DASH_EXTERNAL_URL,
+  "external_label": DASH_EXTERNAL_LABEL,
   "online_seconds": MQTT_ONLINE_SECONDS,
   "stats_window_seconds": STATS_WINDOW_SECONDS,
   "auth_mode": (
@@ -291,6 +308,25 @@ def _sanitize_text(value: str, limit: int = 160) -> str:
   if len(cleaned) <= limit:
     return cleaned
   return f"{cleaned[:limit - 3]}..."
+
+
+def _load_index_template() -> str:
+  global index_template_html
+  if index_template_html is None:
+    with open(INDEX_PATH, "r", encoding="utf-8") as handle:
+      index_template_html = handle.read()
+  return index_template_html
+
+
+def _render_index_html(public_url: str) -> str:
+  template = _load_index_template()
+  title = html_escape(DASH_TITLE, quote=True)
+  description = html_escape(DASH_DESCRIPTION, quote=True)
+  url = html_escape(public_url, quote=True)
+  rendered = template.replace("__DASH_TITLE__", title)
+  rendered = rendered.replace("__DASH_DESCRIPTION__", description)
+  rendered = rendered.replace("__DASH_URL__", url)
+  return rendered
 
 
 def _normalize_key(value: str) -> str:
@@ -958,8 +994,8 @@ async def api_token_middleware(request: Request, call_next):
 
 
 @app.get("/")
-async def index() -> FileResponse:
-  return FileResponse(INDEX_PATH)
+async def index(request: Request) -> HTMLResponse:
+  return HTMLResponse(_render_index_html(str(request.url)))
 
 
 @app.get("/snapshot")
