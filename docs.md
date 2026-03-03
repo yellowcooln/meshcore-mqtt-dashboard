@@ -30,6 +30,9 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 - `/` is server-rendered so metadata is visible to crawlers and chat previews.
 - `title`, `og:title`, and `twitter:title` use `DASH_TITLE`.
 - `description`, `og:description`, and `twitter:description` use `Live node presence, roles, and broker telemetry.`.
+- Favicon is optional via `DASH_LOGO_URL`.
+- `DASH_LOGO_URL` supports `.png`, `.jpg`, and `.jpeg` only.
+- `DASH_LOGO_URL` accepts absolute `http`/`https` URLs or local paths (for example `/static/logo.png`).
 
 ## Header External Link
 - Set `DASH_EXTERNAL_URL` to show an additional header button.

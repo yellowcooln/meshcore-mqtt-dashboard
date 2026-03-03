@@ -32,6 +32,10 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
   - `http://localhost:8081/packets?limit=50`
 - Validate share/embed metadata with:
   - `curl -s http://localhost:8081 | rg -n "og:title|og:description|twitter:title|twitter:description"`
+- Validate favicon behavior:
+  - `curl -s http://localhost:8081 | rg -n "rel=\"icon\""`
+  - With empty `DASH_LOGO_URL`, icon tag should be absent.
+  - With valid `DASH_LOGO_URL` (`.png/.jpg/.jpeg`), icon tag should be present.
 - Validate external button behavior:
   - With empty `DASH_EXTERNAL_URL`, confirm the external header button is hidden.
   - With valid `DASH_EXTERNAL_URL`, confirm the button appears with `DASH_EXTERNAL_LABEL`.

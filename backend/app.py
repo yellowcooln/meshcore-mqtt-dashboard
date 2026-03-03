@@ -7,7 +7,7 @@ import re
 import sqlite3
 import threading
 import time
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Dict, Mapping, Optional, Set
@@ -62,6 +62,7 @@ SYS_TOPICS_LIMIT = int(os.getenv("SYS_TOPICS_LIMIT", "200"))
 STATS_WINDOW_SECONDS = int(os.getenv("STATS_WINDOW_SECONDS", "60"))
 DASH_TITLE = os.getenv("DASH_TITLE", "MQTT Observatory")
 DASH_DESCRIPTION = "Live node presence, roles, and broker telemetry."
+DASH_LOGO_URL = os.getenv("DASH_LOGO_URL", "").strip()
 DASH_EXTERNAL_URL_RAW = os.getenv("DASH_EXTERNAL_URL", "").strip()
 _external_url_parsed = urlparse(DASH_EXTERNAL_URL_RAW) if DASH_EXTERNAL_URL_RAW else None
 if (
@@ -235,6 +236,11 @@ name_cache: Dict[str, str] = {}
 
 role_overrides: Dict[str, str] = {}
 index_template_html: Optional[str] = None
+FAVICON_CONTENT_TYPES = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+}
 
 @dataclass
 class NodeState:
@@ -318,14 +324,41 @@ def _load_index_template() -> str:
   return index_template_html
 
 
+def _resolve_favicon(public_url: str) -> Dict[str, str]:
+  if not DASH_LOGO_URL:
+    return {"url": "", "content_type": ""}
+  parsed = urlparse(DASH_LOGO_URL)
+  if parsed.scheme in ("http", "https") and parsed.netloc:
+    candidate = DASH_LOGO_URL
+  elif parsed.scheme or parsed.netloc:
+    return {"url": "", "content_type": ""}
+  else:
+    candidate = urljoin(public_url, DASH_LOGO_URL)
+  candidate_path = urlparse(candidate).path or ""
+  extension = os.path.splitext(candidate_path.lower())[1]
+  content_type = FAVICON_CONTENT_TYPES.get(extension, "")
+  if not content_type:
+    return {"url": "", "content_type": ""}
+  return {"url": candidate, "content_type": content_type}
+
+
 def _render_index_html(public_url: str) -> str:
   template = _load_index_template()
   title = html_escape(DASH_TITLE, quote=True)
   description = html_escape(DASH_DESCRIPTION, quote=True)
   url = html_escape(public_url, quote=True)
+  favicon = _resolve_favicon(public_url)
+  favicon_tags = ""
+  if favicon["url"]:
+    favicon_url = html_escape(favicon["url"], quote=True)
+    favicon_type = html_escape(favicon["content_type"], quote=True)
+    favicon_tags = (
+      f'<link rel="icon" type="{favicon_type}" href="{favicon_url}" />'
+    )
   rendered = template.replace("__DASH_TITLE__", title)
   rendered = rendered.replace("__DASH_DESCRIPTION__", description)
   rendered = rendered.replace("__DASH_URL__", url)
+  rendered = rendered.replace("__DASH_FAVICON_TAGS__", favicon_tags)
   return rendered
 
 

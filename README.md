@@ -43,6 +43,7 @@ Copy `.env.example` into your environment or export variables before running. Th
 - `MQTT_SYS_TOPIC` ($SYS telemetry)
 - `SYS_TOPICS_ENABLED` (`true`/`false` toggle for $SYS subscription + dashboard display)
 - `DASH_TITLE` (dashboard title used in UI and share/embed metadata)
+- `DASH_LOGO_URL` (optional favicon URL/path; supports `.png`, `.jpg`, `.jpeg`)
 - `DASH_API_TOKEN` (optional token required for `/snapshot`, `/stats`, and `/packets`)
 - `DASH_API_TOKEN_HEADER` (optional token header name; default `X-Dashboard-Token`)
 - `DASH_EXTERNAL_URL` (optional external link button in header; hidden when empty)
@@ -65,6 +66,7 @@ Copy `.env.example` into your environment or export variables before running. Th
 - If `DASH_API_TOKEN` is set, direct API calls to `/snapshot`, `/stats`, and `/packets` without token return `401`.
 - Dashboard page (`/`) and websocket feed (`/ws`) remain accessible so viewers can still use the UI.
 - Share/embed metadata on `/` uses `DASH_TITLE` with description `Live node presence, roles, and broker telemetry.`.
+- Favicon is set from `DASH_LOGO_URL` when provided (`.png`, `.jpg`, `.jpeg` only).
 - The external header button only appears when `DASH_EXTERNAL_URL` is set to a valid `http` or `https` URL.
 
 ## Releases
