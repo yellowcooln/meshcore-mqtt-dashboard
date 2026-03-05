@@ -3,7 +3,7 @@
 Live MQTT dashboard for node presence, roles, traffic stats, and broker telemetry.
 
 - Release notes: [CHANGES.MD](./CHANGES.MD)
-- Preview: `https://mcmqttdashboard.bostonme.sh/`
+- Preview: [https://mcmqttdashboard.bostonme.sh/](https://mcmqttdashboard.bostonme.sh/)
 
 ![Dashboard preview](./docs/example.png)
 
