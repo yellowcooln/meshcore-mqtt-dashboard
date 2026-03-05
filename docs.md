@@ -16,6 +16,7 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 - `curl -s http://localhost:8081/snapshot` (broker + node snapshot).
 - `curl -s http://localhost:8081/packets?limit=50` (recent packets).
 - If `DASH_API_TOKEN` is set, include `?token=<value>` (or send header `X-Dashboard-Token`) for `/snapshot`, `/stats`, and `/packets`.
+- `pip install -r requirements-dev.txt && pytest -q` (run automated test suite).
 
 ## MQTT + Broker
 - Supports `tcp` or `websockets` with TLS.
@@ -60,3 +61,4 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 
 ## Releases
 - Change history is tracked in [CHANGES.MD](./CHANGES.MD) (latest first).
+- CI tests run via `.github/workflows/tests.yml`.

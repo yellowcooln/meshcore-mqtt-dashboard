@@ -29,6 +29,15 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
 
 Open `http://localhost:8081`.
 
+## Testing
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+A GitHub Actions workflow runs the same test suite on pull requests and pushes to `main`/`dev`.
+
 ## Configuration
 
 Copy `.env.example` into your environment or export variables before running. These mirror the live map settings.

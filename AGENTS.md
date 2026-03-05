@@ -22,7 +22,8 @@
 - Keep logging concise and avoid dumping full payloads.
 
 ## Testing Guidelines
-- No automated test suite is present.
+- Automated tests are run with `pytest` from repo root.
+- Install deps with `pip install -r requirements-dev.txt`.
 - Validate changes manually with `/snapshot` and `/packets`.
 
 ## Configuration & Operations

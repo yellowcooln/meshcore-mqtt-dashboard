@@ -5,6 +5,8 @@
 - Wired `title`, `og:title`, and `twitter:title` to `DASH_TITLE`.
 - Added optional favicon support via `DASH_LOGO_URL` (`.png`, `.jpg`, `.jpeg`).
 - Added optional external header button controlled by env vars with URL validation.
+- Added a pytest test suite (`tests/`) for API auth, index metadata/favicon rendering, and redaction behavior.
+- Added GitHub Actions CI test workflow at `.github/workflows/tests.yml` for PRs and pushes.
 - Updated docs to cover embeds, external link behavior, and manual verification steps.
 - New env vars:
   - `DASH_LOGO_URL`: optional favicon URL/path (`.png`, `.jpg`, `.jpeg`).

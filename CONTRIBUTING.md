@@ -25,8 +25,10 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
 - Keep UI changes mobile-friendly and test on narrow screens.
 
 ## Testing
-- No automated test suite is present.
-- Validate changes manually with:
+- Automated tests:
+  - `pip install -r requirements-dev.txt`
+  - `pytest -q`
+- Manual validation:
   - `http://localhost:8081/snapshot`
   - `http://localhost:8081/stats`
   - `http://localhost:8081/packets?limit=50`
