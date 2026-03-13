@@ -2,38 +2,10 @@ services:
   mqtt-dashboard:
     build: ./backend
     container_name: mqtt-dashboard
+    env_file:
+      - .env
     ports:
       - "${WEB_PORT:-8081}:8081"
-    environment:
-      DASH_TITLE: "${DASH_TITLE:-MQTT Observatory}"
-      DASH_LOGO_URL: "${DASH_LOGO_URL:-}"
-      DASH_EXTERNAL_URL: "${DASH_EXTERNAL_URL:-}"
-      DASH_EXTERNAL_LABEL: "${DASH_EXTERNAL_LABEL:-External}"
-      MQTT_HOST: "${MQTT_HOST:-localhost}"
-      MQTT_PORT: "${MQTT_PORT:-1883}"
-      MQTT_USERNAME: "${MQTT_USERNAME:-}"
-      MQTT_PASSWORD: "${MQTT_PASSWORD:-}"
-      MQTT_TRANSPORT: "${MQTT_TRANSPORT:-tcp}"
-      MQTT_WS_PATH: "${MQTT_WS_PATH:-/mqtt}"
-      MQTT_TLS: "${MQTT_TLS:-false}"
-      MQTT_TLS_INSECURE: "${MQTT_TLS_INSECURE:-false}"
-      MQTT_CA_CERT: "${MQTT_CA_CERT:-}"
-      MQTT_CLIENT_ID: "${MQTT_CLIENT_ID:-}"
-      MQTT_TOPIC: "${MQTT_TOPIC:-meshcore/#}"
-      MQTT_SYS_TOPIC: "${MQTT_SYS_TOPIC:-$$SYS/#}"
-      SYS_TOPICS_ENABLED: "${SYS_TOPICS_ENABLED:-true}"
-      DASH_API_TOKEN: "${DASH_API_TOKEN:-}"
-      DASH_API_TOKEN_HEADER: "${DASH_API_TOKEN_HEADER:-X-Dashboard-Token}"
-      MQTT_ONLINE_SECONDS: "${MQTT_ONLINE_SECONDS:-300}"
-      SYS_TOPICS_LIMIT: "${SYS_TOPICS_LIMIT:-200}"
-      STATS_WINDOW_SECONDS: "${STATS_WINDOW_SECONDS:-60}"
-      MQTT_AUTH_TOKEN: "${MQTT_AUTH_TOKEN:-}"
-      MQTT_AUTH_TOKEN_HEADER: "${MQTT_AUTH_TOKEN_HEADER:-Authorization}"
-      MQTT_AUTH_TOKEN_SCHEME: "${MQTT_AUTH_TOKEN_SCHEME:-Bearer}"
-      PACKET_RETENTION_SECONDS: "${PACKET_RETENTION_SECONDS:-7200}"
-      PACKET_DB_PATH: "${PACKET_DB_PATH:-/data/packets.db}"
-      NODE_PURGE_SECONDS: "${NODE_PURGE_SECONDS:-600}"
-      ROLE_OVERRIDES_FILE: "${ROLE_OVERRIDES_FILE:-/data/device_roles.json}"
     restart: unless-stopped
     volumes:
       - ./data:/data

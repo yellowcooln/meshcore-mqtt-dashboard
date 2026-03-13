@@ -55,6 +55,7 @@ CI runs the same suite in GitHub Actions on pull requests and pushes to `main`/`
 ## Configuration
 
 Copy `.env.example` and set what you need.
+`docker-compose.yaml` loads the container environment from `.env`.
 
 ### Dashboard
 - `WEB_PORT`
