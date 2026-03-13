@@ -59,7 +59,7 @@ Copy `.env.example` and set what you need.
 ### Dashboard
 - `WEB_PORT`
 - `DASH_TITLE`
-- `DASH_BROKER_HOST` (optional broker endpoint shown in the UI; for example `mqttmc01.bostonme.sh` or `mqttmc01.bostonme.sh:443`)
+- `DASH_BROKER_HOST` (optional broker endpoint shown in the UI; for example `broker.example.net` or `broker.example.net:443`)
 - `DASH_LOGO_URL` (favicon only; `.png`, `.jpg`, `.jpeg`)
 - `DASH_EXTERNAL_URL` (optional header button URL; `http`/`https`)
 - `DASH_EXTERNAL_LABEL`

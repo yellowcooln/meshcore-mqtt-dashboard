@@ -4,7 +4,7 @@
 - Added server-rendered share/embed metadata on `/` so previews use live config values.
 - Wired `title`, `og:title`, and `twitter:title` to `DASH_TITLE`.
 - Added `DASH_BROKER_HOST` so the dashboard can show a cleaner broker endpoint than the actual `MQTT_HOST`.
-- Updated `DASH_BROKER_HOST` handling so values like `mqttmc01.bostonme.sh:443` are rendered exactly as provided.
+- Updated `DASH_BROKER_HOST` handling so values like `broker.example.net:443` are rendered exactly as provided.
 - Added optional favicon support via `DASH_LOGO_URL` (`.png`, `.jpg`, `.jpeg`).
 - Added optional external header button controlled by env vars with URL validation.
 - Added a pytest test suite (`tests/`) for API auth, index metadata/favicon rendering, and redaction behavior.
