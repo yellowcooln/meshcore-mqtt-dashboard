@@ -36,3 +36,25 @@ def test_packets_accepts_query_token(client):
   assert response.status_code == 200
   payload = response.json()
   assert "packets" in payload
+
+
+def test_snapshot_exposes_display_host_override(client):
+  dashboard_app.broker_state["host"] = "host.docker.internal"
+  dashboard_app.broker_state["display_host"] = "Boston MQTT"
+  response = client.get("/snapshot")
+  assert response.status_code == 200
+  payload = response.json()
+  assert payload["broker"]["host"] == "host.docker.internal"
+  assert payload["broker"]["display_host"] == "Boston MQTT"
+
+
+def test_snapshot_allows_display_host_with_public_port(client):
+  dashboard_app.broker_state["host"] = "host.docker.internal"
+  dashboard_app.broker_state["port"] = 8883
+  dashboard_app.broker_state["display_host"] = "mqttmc01.bostonme.sh:443"
+  response = client.get("/snapshot")
+  assert response.status_code == 200
+  payload = response.json()
+  assert payload["broker"]["host"] == "host.docker.internal"
+  assert payload["broker"]["port"] == 8883
+  assert payload["broker"]["display_host"] == "mqttmc01.bostonme.sh:443"

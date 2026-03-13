@@ -63,6 +63,7 @@ STATS_WINDOW_SECONDS = int(os.getenv("STATS_WINDOW_SECONDS", "60"))
 DASH_TITLE = os.getenv("DASH_TITLE", "MQTT Observatory")
 DASH_DESCRIPTION = "Live node presence, roles, and broker telemetry."
 DASH_LOGO_URL = os.getenv("DASH_LOGO_URL", "").strip()
+DASH_BROKER_HOST = os.getenv("DASH_BROKER_HOST", "").strip()
 DASH_EXTERNAL_URL_RAW = os.getenv("DASH_EXTERNAL_URL", "").strip()
 _external_url_parsed = urlparse(DASH_EXTERNAL_URL_RAW) if DASH_EXTERNAL_URL_RAW else None
 if (
@@ -283,6 +284,7 @@ broker_state: Dict[str, Any] = {
   "last_disconnect": 0.0,
   "last_error": "",
   "host": MQTT_HOST,
+  "display_host": DASH_BROKER_HOST or MQTT_HOST,
   "port": MQTT_PORT,
   "transport": MQTT_TRANSPORT,
   "ws_path": MQTT_WS_PATH,

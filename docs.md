@@ -22,6 +22,9 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 - Supports `tcp` or `websockets` with TLS.
 - Optional websocket auth token header (`MQTT_AUTH_TOKEN`, `MQTT_AUTH_TOKEN_HEADER`).
 - $SYS topics are optional and displayed when available (`SYS_TOPICS_ENABLED=true`).
+- `MQTT_HOST` is used for the actual broker connection.
+- `DASH_BROKER_HOST` optionally overrides the broker endpoint shown in the dashboard UI.
+- If `DASH_BROKER_HOST` is set, it is rendered exactly as provided.
 
 ## Dashboard API Token
 - `DASH_API_TOKEN` protects `/snapshot`, `/stats`, and `/packets`.
