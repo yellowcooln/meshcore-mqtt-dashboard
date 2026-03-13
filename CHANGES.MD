@@ -1,17 +1,22 @@
 # Changes
 
 ## v1.2.1 - 2026-03-13
-- Added server-rendered share/embed metadata on `/` so previews use live config values.
-- Wired `title`, `og:title`, and `twitter:title` to `DASH_TITLE`.
+- Simplified `docker-compose.yaml` to load container runtime vars from `.env` via `env_file`.
 - Added `DASH_BROKER_HOST` so the dashboard can show a cleaner broker endpoint than the actual `MQTT_HOST`.
 - Updated `DASH_BROKER_HOST` handling so values like `broker.example.net:443` are rendered exactly as provided.
+- Updated docs for the broker display endpoint override.
+- New env vars:
+  - `DASH_BROKER_HOST`: optional broker endpoint shown in the UI only.
+
+## v1.2.0 - 2026-03-03
+- Added server-rendered share/embed metadata on `/` so previews use live config values.
+- Wired `title`, `og:title`, and `twitter:title` to `DASH_TITLE`.
 - Added optional favicon support via `DASH_LOGO_URL` (`.png`, `.jpg`, `.jpeg`).
 - Added optional external header button controlled by env vars with URL validation.
 - Added a pytest test suite (`tests/`) for API auth, index metadata/favicon rendering, and redaction behavior.
 - Added GitHub Actions CI test workflow at `.github/workflows/tests.yml` for PRs and pushes.
 - Updated docs to cover embeds, external link behavior, and manual verification steps.
 - New env vars:
-  - `DASH_BROKER_HOST`: optional broker endpoint shown in the UI only.
   - `DASH_LOGO_URL`: optional favicon URL/path (`.png`, `.jpg`, `.jpeg`).
   - `DASH_EXTERNAL_URL`: optional external header button URL (must be `http` or `https`).
   - `DASH_EXTERNAL_LABEL`: external header button label (default `External`).
