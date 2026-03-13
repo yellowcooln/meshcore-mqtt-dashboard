@@ -55,10 +55,12 @@ CI runs the same suite in GitHub Actions on pull requests and pushes to `main`/`
 ## Configuration
 
 Copy `.env.example` and set what you need.
+`docker-compose.yaml` loads the container environment from `.env`.
 
 ### Dashboard
 - `WEB_PORT`
 - `DASH_TITLE`
+- `DASH_BROKER_HOST` (optional broker endpoint shown in the UI; for example `broker.example.net` or `broker.example.net:443`)
 - `DASH_LOGO_URL` (favicon only; `.png`, `.jpg`, `.jpeg`)
 - `DASH_EXTERNAL_URL` (optional header button URL; `http`/`https`)
 - `DASH_EXTERNAL_LABEL`
@@ -96,4 +98,6 @@ Copy `.env.example` and set what you need.
 - Share/embed metadata uses:
   - title from `DASH_TITLE`
   - description `Live node presence, roles, and broker telemetry.`
+- `MQTT_HOST` and `MQTT_PORT` control the actual connection target; `DASH_BROKER_HOST` only changes what the dashboard displays.
+- If `DASH_BROKER_HOST` is set, the dashboard shows it exactly as provided.
 - Favicon is rendered only when `DASH_LOGO_URL` is valid and supported.

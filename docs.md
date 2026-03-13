@@ -13,6 +13,7 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 ## Runtime Commands
 - `docker compose up -d --build` (run after any file changes).
 - `docker compose logs -f mqtt-dashboard` (watch MQTT + app logs).
+- `docker-compose.yaml` loads runtime vars from `.env` via `env_file`.
 - `curl -s http://localhost:8081/snapshot` (broker + node snapshot).
 - `curl -s http://localhost:8081/packets?limit=50` (recent packets).
 - If `DASH_API_TOKEN` is set, include `?token=<value>` (or send header `X-Dashboard-Token`) for `/snapshot`, `/stats`, and `/packets`.
@@ -22,6 +23,9 @@ This project provides a live MQTT dashboard that tracks broker status and node p
 - Supports `tcp` or `websockets` with TLS.
 - Optional websocket auth token header (`MQTT_AUTH_TOKEN`, `MQTT_AUTH_TOKEN_HEADER`).
 - $SYS topics are optional and displayed when available (`SYS_TOPICS_ENABLED=true`).
+- `MQTT_HOST` is used for the actual broker connection.
+- `DASH_BROKER_HOST` optionally overrides the broker endpoint shown in the dashboard UI.
+- If `DASH_BROKER_HOST` is set, it is rendered exactly as provided.
 
 ## Dashboard API Token
 - `DASH_API_TOKEN` protects `/snapshot`, `/stats`, and `/packets`.

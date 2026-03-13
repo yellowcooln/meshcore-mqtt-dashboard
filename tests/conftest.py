@@ -28,7 +28,9 @@ def client(monkeypatch):
   dashboard_app.DASH_API_TOKEN_HEADER = "X-Dashboard-Token"
   dashboard_app.DASH_TITLE = "MQTT Observatory"
   dashboard_app.DASH_DESCRIPTION = "Live node presence, roles, and broker telemetry."
+  dashboard_app.DASH_BROKER_HOST = ""
   dashboard_app.DASH_LOGO_URL = ""
+  dashboard_app.broker_state["display_host"] = dashboard_app.MQTT_HOST
 
   with TestClient(dashboard_app.app) as test_client:
     yield test_client

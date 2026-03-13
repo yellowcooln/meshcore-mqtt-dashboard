@@ -753,7 +753,7 @@
         const connected = Boolean(state.broker.connected);
         elements.statusPill.classList.toggle("connected", connected);
         elements.statusText.textContent = connected ? "Connected" : "Disconnected";
-        const host = state.broker.host ? `${state.broker.host}:${state.broker.port}` : "--";
+        const host = state.broker.display_host || (state.broker.host ? `${state.broker.host}:${state.broker.port}` : "--");
         elements.brokerHost.textContent = host;
         const transport = state.broker.transport || "tcp";
         const tls = state.broker.tls ? "TLS" : "Plain";
@@ -891,7 +891,7 @@
       function renderBrokerDetail() {
         const broker = state.broker || {};
         const lines = [
-          ["Host", broker.host ? `${broker.host}:${broker.port}` : "--"],
+          ["Host", broker.display_host || (broker.host ? `${broker.host}:${broker.port}` : "--")],
           ["Transport", broker.transport || "--"],
           ["TLS", broker.tls ? "Enabled" : "Disabled"],
           ["WS Path", broker.ws_path || "--"],
