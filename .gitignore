@@ -3,7 +3,10 @@
 __pycache__/
 *.pyc
 .env.save
+.env
 .pytest_cache/
 .venv/
+backend/static/logo.png
+data/
 docker-compose.override.yaml
 docker-compose.override.yml
