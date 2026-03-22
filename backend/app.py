@@ -2,6 +2,7 @@ import asyncio
 from html import escape as html_escape
 import hmac
 import json
+import math
 import os
 import re
 import sqlite3
@@ -20,6 +21,7 @@ import paho.mqtt.client as mqtt
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(ROOT_DIR, "static")
 INDEX_PATH = os.path.join(STATIC_DIR, "index.html")
+TRAFFIC_PATH = os.path.join(STATIC_DIR, "traffic.html")
 DATA_DIR = os.path.join(os.path.dirname(ROOT_DIR), "data")
 
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
@@ -62,6 +64,7 @@ SYS_TOPICS_LIMIT = int(os.getenv("SYS_TOPICS_LIMIT", "200"))
 STATS_WINDOW_SECONDS = int(os.getenv("STATS_WINDOW_SECONDS", "60"))
 DASH_TITLE = os.getenv("DASH_TITLE", "MQTT Observatory")
 DASH_DESCRIPTION = "Live node presence, roles, and broker telemetry."
+TRAFFIC_DESCRIPTION = "Live unique packet rates by route and packet type."
 DASH_LOGO_URL = os.getenv("DASH_LOGO_URL", "").strip()
 DASH_BROKER_HOST = os.getenv("DASH_BROKER_HOST", "").strip()
 DASH_EXTERNAL_URL_RAW = os.getenv("DASH_EXTERNAL_URL", "").strip()
@@ -236,12 +239,24 @@ last_packet_purge = 0.0
 name_cache: Dict[str, str] = {}
 
 role_overrides: Dict[str, str] = {}
-index_template_html: Optional[str] = None
+template_html_cache: Dict[str, str] = {}
 FAVICON_CONTENT_TYPES = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
 }
+TRAFFIC_ROUTE_KEYS = ("flood", "direct", "other")
+TRAFFIC_PAYLOAD_KEYS = ("trace", "advert", "message", "other")
+TRAFFIC_HISTORY_SECONDS = (
+  PACKET_RETENTION_SECONDS if PACKET_RETENTION_SECONDS > 0 else max(180, STATS_WINDOW_SECONDS)
+)
+TRAFFIC_CHART_BUCKETS = 240
+
+traffic_events = deque()
+traffic_identity_queue = deque()
+traffic_identity_seen: Dict[str, float] = {}
+traffic_packets_total = 0
+last_traffic_packet_at = 0.0
 
 @dataclass
 class NodeState:
@@ -319,11 +334,16 @@ def _sanitize_text(value: str, limit: int = 160) -> str:
 
 
 def _load_index_template() -> str:
-  global index_template_html
-  if index_template_html is None:
-    with open(INDEX_PATH, "r", encoding="utf-8") as handle:
-      index_template_html = handle.read()
-  return index_template_html
+  return _load_html_template(INDEX_PATH)
+
+
+def _load_html_template(path: str) -> str:
+  cached = template_html_cache.get(path)
+  if cached is None:
+    with open(path, "r", encoding="utf-8") as handle:
+      cached = handle.read()
+    template_html_cache[path] = cached
+  return cached
 
 
 def _resolve_favicon(public_url: str) -> Dict[str, str]:
@@ -344,10 +364,10 @@ def _resolve_favicon(public_url: str) -> Dict[str, str]:
   return {"url": candidate, "content_type": content_type}
 
 
-def _render_index_html(public_url: str) -> str:
-  template = _load_index_template()
-  title = html_escape(DASH_TITLE, quote=True)
-  description = html_escape(DASH_DESCRIPTION, quote=True)
+def _render_html(path: str, title_text: str, description_text: str, public_url: str) -> str:
+  template = _load_html_template(path)
+  title = html_escape(title_text, quote=True)
+  description = html_escape(description_text, quote=True)
   url = html_escape(public_url, quote=True)
   favicon = _resolve_favicon(public_url)
   favicon_tags = ""
@@ -357,11 +377,29 @@ def _render_index_html(public_url: str) -> str:
     favicon_tags = (
       f'<link rel="icon" type="{favicon_type}" href="{favicon_url}" />'
     )
+  external_link = ""
+  if DASH_EXTERNAL_URL:
+    external_url = html_escape(DASH_EXTERNAL_URL, quote=True)
+    external_label = html_escape(DASH_EXTERNAL_LABEL or "External", quote=True)
+    external_link = (
+      f'<a class="github-link" id="external-link" href="{external_url}" '
+      f'target="_blank" rel="noopener">{external_label}</a>'
+    )
   rendered = template.replace("__DASH_TITLE__", title)
   rendered = rendered.replace("__DASH_DESCRIPTION__", description)
   rendered = rendered.replace("__DASH_URL__", url)
   rendered = rendered.replace("__DASH_FAVICON_TAGS__", favicon_tags)
+  rendered = rendered.replace("__DASH_EXTERNAL_LINK__", external_link)
   return rendered
+
+
+def _render_index_html(public_url: str) -> str:
+  return _render_html(INDEX_PATH, DASH_TITLE, DASH_DESCRIPTION, public_url)
+
+
+def _render_traffic_html(public_url: str) -> str:
+  traffic_title = f"{DASH_TITLE} Traffic"
+  return _render_html(TRAFFIC_PATH, traffic_title, TRAFFIC_DESCRIPTION, public_url)
 
 
 def _normalize_key(value: str) -> str:
@@ -688,6 +726,365 @@ def _record_message() -> None:
     _queue_broadcast({"type": "node_remove", "node_id": node_id})
 
 
+def _empty_traffic_counts(keys: tuple) -> Dict[str, int]:
+  return {key: 0 for key in keys}
+
+
+def _classify_route_label(value: Any) -> str:
+  if value is None:
+    return "other"
+  route = str(value).strip().upper()
+  if route == "F":
+    return "flood"
+  if route == "D":
+    return "direct"
+  return "other"
+
+
+def _classify_payload_label(value: Any) -> str:
+  try:
+    packet_type = int(str(value).strip())
+  except (TypeError, ValueError):
+    return "other"
+  if packet_type == 4:
+    return "advert"
+  if packet_type in (8, 9):
+    return "trace"
+  if packet_type in (2, 5):
+    return "message"
+  return "other"
+
+
+def _extract_packet_event(topic: str, payload_info: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+  if not topic.endswith("/packets"):
+    return None
+  payload_json = payload_info.get("json")
+  if not isinstance(payload_json, dict):
+    return None
+  packet_type = payload_json.get("packet_type")
+  route_value = payload_json.get("route")
+  packet_hash = payload_json.get("hash")
+  raw_payload = payload_json.get("raw")
+  if packet_type is None and route_value is None and not packet_hash and not raw_payload:
+    return None
+  dedupe_parts = [
+    str(packet_hash or "").strip(),
+    str(raw_payload or "").strip(),
+    str(packet_type or "").strip(),
+    str(route_value or "").strip(),
+  ]
+  dedupe_key = "|".join(part for part in dedupe_parts if part)
+  if not dedupe_key:
+    dedupe_key = f"{topic}|{payload_info.get('text', '')}"
+  return {
+    "ts": time.time(),
+    "route": _classify_route_label(route_value),
+    "payload": _classify_payload_label(packet_type),
+    "dedupe_key": dedupe_key,
+  }
+
+
+def _build_packet_event_from_row(topic: str, payload_json_text: str, ts: float) -> Optional[Dict[str, Any]]:
+  if not topic.endswith("/packets"):
+    return None
+  if not payload_json_text:
+    return None
+  try:
+    payload_json = json.loads(payload_json_text)
+  except json.JSONDecodeError:
+    return None
+  if not isinstance(payload_json, dict):
+    return None
+  packet_type = payload_json.get("packet_type")
+  route_value = payload_json.get("route")
+  packet_hash = payload_json.get("hash")
+  raw_payload = payload_json.get("raw")
+  if packet_type is None and route_value is None and not packet_hash and not raw_payload:
+    return None
+  dedupe_parts = [
+    str(packet_hash or "").strip(),
+    str(raw_payload or "").strip(),
+    str(packet_type or "").strip(),
+    str(route_value or "").strip(),
+  ]
+  dedupe_key = "|".join(part for part in dedupe_parts if part)
+  if not dedupe_key:
+    dedupe_key = f"{topic}|{payload_json_text}"
+  return {
+    "ts": float(ts or time.time()),
+    "route": _classify_route_label(route_value),
+    "payload": _classify_payload_label(packet_type),
+    "dedupe_key": dedupe_key,
+  }
+
+
+def _prune_traffic_state(now: float) -> None:
+  cutoff = now - TRAFFIC_HISTORY_SECONDS
+  while traffic_events and traffic_events[0]["ts"] < cutoff:
+    traffic_events.popleft()
+  while traffic_identity_queue and traffic_identity_queue[0][1] < cutoff:
+    dedupe_key, seen_at = traffic_identity_queue.popleft()
+    if traffic_identity_seen.get(dedupe_key) == seen_at:
+      traffic_identity_seen.pop(dedupe_key, None)
+
+
+def _reset_traffic_state() -> None:
+  global traffic_packets_total, last_traffic_packet_at
+  traffic_events.clear()
+  traffic_identity_queue.clear()
+  traffic_identity_seen.clear()
+  traffic_packets_total = 0
+  last_traffic_packet_at = 0.0
+
+
+def _append_loaded_traffic_event(ts: float, route: str, payload: str, dedupe_key: str) -> None:
+  global traffic_packets_total, last_traffic_packet_at
+  traffic_packets_total += 1
+  if ts > last_traffic_packet_at:
+    last_traffic_packet_at = ts
+  history_cutoff = time.time() - TRAFFIC_HISTORY_SECONDS
+  if ts < history_cutoff:
+    return
+  traffic_events.append(
+    {
+      "ts": ts,
+      "route": route,
+      "payload": payload,
+    }
+  )
+  traffic_identity_queue.append((dedupe_key, ts))
+  traffic_identity_seen[dedupe_key] = ts
+
+
+def _persist_traffic_event(packet_event: Dict[str, Any]) -> None:
+  global last_packet_purge
+  if packet_db is None:
+    return
+  now = float(packet_event.get("ts") or time.time())
+  with packet_db_lock:
+    packet_db.execute(
+      """
+      INSERT INTO traffic_events (ts, dedupe_key, route_class, payload_class)
+      VALUES (?, ?, ?, ?)
+      """,
+      (
+        now,
+        packet_event.get("dedupe_key", ""),
+        packet_event.get("route", "other"),
+        packet_event.get("payload", "other"),
+      ),
+    )
+    if now - last_packet_purge >= 60:
+      cutoff = now - PACKET_RETENTION_SECONDS
+      packet_db.execute("DELETE FROM packets WHERE ts < ?", (cutoff,))
+      packet_db.execute("DELETE FROM traffic_events WHERE ts < ?", (cutoff,))
+      last_packet_purge = now
+    packet_db.commit()
+
+
+def _backfill_traffic_events_from_packets() -> None:
+  if packet_db is None:
+    return
+  with packet_db_lock:
+    rows = packet_db.execute(
+      """
+      SELECT ts, topic, payload_json
+      FROM packets
+      WHERE topic LIKE '%/packets' AND payload_json IS NOT NULL AND payload_json != ''
+      ORDER BY ts ASC
+      """
+    ).fetchall()
+  if not rows:
+    return
+
+  seen_recent: Dict[str, float] = {}
+  recent_queue = deque()
+  inserts = []
+  for ts, topic, payload_json_text in rows:
+    packet_event = _build_packet_event_from_row(topic, payload_json_text, ts)
+    if not packet_event:
+      continue
+    event_ts = float(packet_event["ts"])
+    cutoff = event_ts - TRAFFIC_HISTORY_SECONDS
+    while recent_queue and recent_queue[0][1] < cutoff:
+      old_key, old_ts = recent_queue.popleft()
+      if seen_recent.get(old_key) == old_ts:
+        seen_recent.pop(old_key, None)
+    dedupe_key = packet_event["dedupe_key"]
+    if dedupe_key in seen_recent:
+      continue
+    seen_recent[dedupe_key] = event_ts
+    recent_queue.append((dedupe_key, event_ts))
+    inserts.append(
+      (
+        event_ts,
+        dedupe_key,
+        packet_event["route"],
+        packet_event["payload"],
+      )
+    )
+
+  if not inserts:
+    return
+
+  with packet_db_lock:
+    packet_db.executemany(
+      """
+      INSERT INTO traffic_events (ts, dedupe_key, route_class, payload_class)
+      VALUES (?, ?, ?, ?)
+      """,
+      inserts,
+    )
+    packet_db.commit()
+
+
+def _load_traffic_events() -> None:
+  if packet_db is None:
+    return
+  with state_lock:
+    _reset_traffic_state()
+
+  with packet_db_lock:
+    traffic_count = packet_db.execute(
+      "SELECT COUNT(*) FROM traffic_events"
+    ).fetchone()[0]
+  if traffic_count == 0:
+    _backfill_traffic_events_from_packets()
+
+  with packet_db_lock:
+    rows = packet_db.execute(
+      """
+      SELECT ts, dedupe_key, route_class, payload_class
+      FROM traffic_events
+      ORDER BY ts ASC
+      """
+    ).fetchall()
+
+  with state_lock:
+    _reset_traffic_state()
+    for ts, dedupe_key, route_class, payload_class in rows:
+      _append_loaded_traffic_event(
+        float(ts or 0.0),
+        str(route_class or "other"),
+        str(payload_class or "other"),
+        str(dedupe_key or ""),
+      )
+    _prune_traffic_state(time.time())
+
+
+def _record_traffic_event(packet_event: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+  global traffic_packets_total, last_traffic_packet_at
+  if not packet_event:
+    return None
+  now = float(packet_event.get("ts") or time.time())
+  dedupe_key = packet_event.get("dedupe_key")
+  if not dedupe_key:
+    return None
+  with state_lock:
+    _prune_traffic_state(now)
+    if dedupe_key in traffic_identity_seen:
+      return None
+    traffic_identity_seen[dedupe_key] = now
+    traffic_identity_queue.append((dedupe_key, now))
+    traffic_events.append(
+      {
+        "ts": now,
+        "route": packet_event.get("route", "other"),
+        "payload": packet_event.get("payload", "other"),
+      }
+    )
+    traffic_packets_total += 1
+    last_traffic_packet_at = now
+  _persist_traffic_event(packet_event)
+  return {
+    "ts": now,
+    "route": packet_event.get("route", "other"),
+    "payload": packet_event.get("payload", "other"),
+  }
+
+
+def _build_traffic(now: float, include_history: bool = True) -> Dict[str, Any]:
+  with state_lock:
+    _prune_traffic_state(now)
+    events = [dict(event) for event in traffic_events]
+    packets_total = traffic_packets_total
+    last_packet_at = last_traffic_packet_at
+
+  rate_cutoff = now - STATS_WINDOW_SECONDS
+  route_counts = _empty_traffic_counts(TRAFFIC_ROUTE_KEYS)
+  payload_counts = _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS)
+  packet_rate_count = 0
+
+  for event in events:
+    if event["ts"] < rate_cutoff:
+      continue
+    packet_rate_count += 1
+    route_key = event.get("route", "other")
+    payload_key = event.get("payload", "other")
+    route_counts[route_key] = route_counts.get(route_key, 0) + 1
+    payload_counts[payload_key] = payload_counts.get(payload_key, 0) + 1
+
+  if STATS_WINDOW_SECONDS > 0:
+    scale = 1.0 / STATS_WINDOW_SECONDS
+  else:
+    scale = 0.0
+
+  traffic = {
+    "window_seconds": STATS_WINDOW_SECONDS,
+    "history_seconds": TRAFFIC_HISTORY_SECONDS,
+    "unique_packets_total": packets_total,
+    "packets_per_second": round(packet_rate_count * scale, 2),
+    "last_packet_at": last_packet_at,
+    "route_counts": route_counts,
+    "route_rates": {
+      key: round(route_counts[key] * scale, 2)
+      for key in TRAFFIC_ROUTE_KEYS
+    },
+    "payload_counts": payload_counts,
+    "payload_rates": {
+      key: round(payload_counts[key] * scale, 2)
+      for key in TRAFFIC_PAYLOAD_KEYS
+    },
+  }
+
+  if not include_history:
+    return traffic
+
+  history_seconds = max(1, TRAFFIC_HISTORY_SECONDS)
+  bucket_seconds = max(1, math.ceil(history_seconds / TRAFFIC_CHART_BUCKETS))
+  bucket_count = max(1, math.ceil(history_seconds / bucket_seconds))
+  start_second = int(now) - history_seconds + 1
+  bucket_start = (start_second // bucket_seconds) * bucket_seconds
+  history = []
+  history_by_second: Dict[int, Dict[str, Any]] = {}
+  for index in range(bucket_count):
+    ts_value = bucket_start + (index * bucket_seconds)
+    bucket = {
+      "ts": ts_value,
+      "bucket_seconds": bucket_seconds,
+      "total": 0,
+      "route_counts": _empty_traffic_counts(TRAFFIC_ROUTE_KEYS),
+      "payload_counts": _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS),
+    }
+    history.append(bucket)
+    history_by_second[ts_value] = bucket
+
+  for event in events:
+    bucket_key = (int(event["ts"]) // bucket_seconds) * bucket_seconds
+    bucket = history_by_second.get(bucket_key)
+    if not bucket:
+      continue
+    bucket["total"] += 1
+    route_key = event.get("route", "other")
+    payload_key = event.get("payload", "other")
+    bucket["route_counts"][route_key] = bucket["route_counts"].get(route_key, 0) + 1
+    bucket["payload_counts"][payload_key] = bucket["payload_counts"].get(payload_key, 0) + 1
+
+  traffic["bucket_seconds"] = bucket_seconds
+  traffic["history"] = history
+  return traffic
+
+
 def _build_stats(now: float) -> Dict[str, Any]:
   with state_lock:
     online_count = sum(
@@ -720,6 +1117,7 @@ def _build_snapshot() -> Dict[str, Any]:
     "nodes": nodes_list,
     "sys_topics": sys_copy,
     "stats": _build_stats(now),
+    "traffic": _build_traffic(now),
   }
 
 
@@ -751,6 +1149,21 @@ def _init_packet_db() -> None:
   )
   packet_db.execute("CREATE INDEX IF NOT EXISTS idx_packets_ts ON packets (ts)")
   packet_db.execute("CREATE INDEX IF NOT EXISTS idx_packets_node ON packets (node_id)")
+  packet_db.execute(
+    """
+    CREATE TABLE IF NOT EXISTS traffic_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ts REAL NOT NULL,
+      dedupe_key TEXT NOT NULL,
+      route_class TEXT NOT NULL,
+      payload_class TEXT NOT NULL
+    )
+    """
+  )
+  packet_db.execute("CREATE INDEX IF NOT EXISTS idx_traffic_events_ts ON traffic_events (ts)")
+  packet_db.execute(
+    "CREATE INDEX IF NOT EXISTS idx_traffic_events_dedupe_ts ON traffic_events (dedupe_key, ts)"
+  )
   packet_db.commit()
 
 
@@ -812,6 +1225,7 @@ def _save_packet(topic: str, payload_info: Dict[str, Any], node: NodeState) -> N
     if now - last_packet_purge >= 60:
       cutoff = now - PACKET_RETENTION_SECONDS
       packet_db.execute("DELETE FROM packets WHERE ts < ?", (cutoff,))
+      packet_db.execute("DELETE FROM traffic_events WHERE ts < ?", (cutoff,))
       last_packet_purge = now
     packet_db.commit()
 
@@ -914,10 +1328,15 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
     )
     return
 
+  packet_event = _extract_packet_event(topic, payload_info)
   node = _update_node(topic, payload_info)
   _record_message()
   now = time.time()
   _save_packet(topic, payload_info, node)
+  unique_packet_event = _record_traffic_event(packet_event)
+  traffic_summary = None
+  if unique_packet_event:
+    traffic_summary = _build_traffic(now, include_history=False)
   _queue_broadcast(
     {
       "type": "node_update",
@@ -925,6 +1344,14 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
       "stats": _build_stats(now),
     }
   )
+  if unique_packet_event and traffic_summary is not None:
+    _queue_broadcast(
+      {
+        "type": "traffic_update",
+        "event": unique_packet_event,
+        "traffic": traffic_summary,
+      }
+    )
 
 
 def _load_role_overrides() -> Dict[str, str]:
@@ -1010,6 +1437,7 @@ async def on_startup():
   role_overrides = _load_role_overrides()
   _init_packet_db()
   _load_name_cache()
+  _load_traffic_events()
   start_mqtt()
 
 
@@ -1031,6 +1459,11 @@ async def api_token_middleware(request: Request, call_next):
 @app.get("/")
 async def index(request: Request) -> HTMLResponse:
   return HTMLResponse(_render_index_html(str(request.url)))
+
+
+@app.get("/traffic")
+async def traffic(request: Request) -> HTMLResponse:
+  return HTMLResponse(_render_traffic_html(str(request.url)))
 
 
 @app.get("/snapshot")

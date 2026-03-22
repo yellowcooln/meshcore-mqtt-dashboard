@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__DASH_TITLE__</title>
+    <meta name="description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="__DASH_TITLE__" />
+    <meta property="og:description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:url" content="__DASH_URL__" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="__DASH_TITLE__" />
+    <meta name="twitter:description" content="__DASH_DESCRIPTION__" />
+    __DASH_FAVICON_TAGS__
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #e7edf5;
+        --muted: #9aa7b6;
+        --panel: #0f1823;
+        --panel-strong: #172333;
+        --accent: #4aa3ff;
+        --accent-2: #5de2c5;
+        --accent-3: #ffbe6b;
+        --warn: #ff7b66;
+        --grid: rgba(255, 255, 255, 0.08);
+        --shadow: 0 26px 64px rgba(0, 0, 0, 0.38);
+        --bg-gradient:
+          radial-gradient(circle at 18% 15%, rgba(74, 163, 255, 0.22), transparent 60%),
+          radial-gradient(circle at 80% 10%, rgba(93, 226, 197, 0.18), transparent 55%),
+          radial-gradient(circle at 85% 80%, rgba(255, 190, 107, 0.12), transparent 50%),
+          linear-gradient(160deg, #0a1119 0%, #0f1a27 50%, #0b1320 100%);
+      }
+
+      [data-theme="light"] {
+        --ink: #1b2430;
+        --muted: #5a6a7a;
+        --panel: #f4f6fb;
+        --panel-strong: #e9eef6;
+        --accent: #1f6fe0;
+        --accent-2: #158a6a;
+        --accent-3: #f0b24a;
+        --warn: #d4584f;
+        --grid: rgba(24, 40, 64, 0.12);
+        --shadow: 0 18px 50px rgba(17, 34, 56, 0.12);
+        --bg-gradient:
+          radial-gradient(circle at 18% 15%, rgba(31, 111, 224, 0.18), transparent 60%),
+          radial-gradient(circle at 82% 12%, rgba(21, 138, 106, 0.1), transparent 50%),
+          radial-gradient(circle at 88% 75%, rgba(240, 178, 74, 0.12), transparent 50%),
+          linear-gradient(160deg, #f5f7fb 0%, #eef2f7 52%, #f8fafd 100%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+      }
+
+      html {
+        background: var(--bg-gradient);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+        color: var(--ink);
+        overflow-x: hidden;
+        background: transparent;
+      }
+
+      .app {
+        position: relative;
+        padding: 36px 40px 48px;
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        animation: fade-in 600ms ease-out;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      .header-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .title-block h1 {
+        margin: 0;
+        font-size: 2.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .title-block p {
+        margin: 6px 0 0;
+        font-size: 0.95rem;
+        color: var(--muted);
+        max-width: 64ch;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--warn);
+        box-shadow: 0 0 0 4px rgba(255, 141, 109, 0.2);
+      }
+
+      .status-pill.connected .status-dot {
+        background: var(--accent-2);
+        box-shadow: 0 0 0 4px rgba(109, 214, 168, 0.2);
+      }
+
+      .theme-toggle,
+      .nav-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: var(--panel);
+        color: var(--ink);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-decoration: none;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+      }
+
+      .nav-link:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      [data-theme="light"] .theme-toggle,
+      [data-theme="light"] .nav-link {
+        border-color: rgba(24, 40, 64, 0.2);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 18px;
+        margin-bottom: 24px;
+        width: 100%;
+      }
+
+      .card,
+      .panel {
+        background: var(--panel);
+        border: 1px solid rgba(93, 75, 52, 0.08);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        min-width: 0;
+        width: 100%;
+        animation: rise 540ms ease-out;
+      }
+
+      .card {
+        padding: 18px 18px 16px;
+      }
+
+      .panel {
+        border-radius: 22px;
+        padding: 18px 18px 20px;
+        overflow: hidden;
+      }
+
+      .card h3,
+      .panel h2 {
+        margin: 0 0 12px;
+      }
+
+      .card h3 {
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .panel h2 {
+        font-size: 1.1rem;
+      }
+
+      .metric-value {
+        font-size: 1.9rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        overflow-wrap: anywhere;
+      }
+
+      .metric-sub,
+      .panel-sub,
+      .footer-note,
+      .callout,
+      .legend-meta {
+        color: var(--muted);
+      }
+
+      .metric-sub,
+      .panel-sub,
+      .footer-note,
+      .callout {
+        font-size: 0.86rem;
+        line-height: 1.55;
+      }
+
+      .metric-sub {
+        margin-top: 8px;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+        margin-bottom: 24px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr);
+        gap: 24px;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .stack {
+        display: grid;
+        gap: 24px;
+      }
+
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+
+      .panel-head .mono {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .mono {
+        font-family: "IBM Plex Mono", "Courier New", monospace;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .chart-wrap {
+        border-radius: 18px;
+        background: var(--panel-strong);
+        border: 1px solid var(--grid);
+        padding: 14px;
+      }
+
+      canvas {
+        width: 100%;
+        height: 260px;
+        display: block;
+      }
+
+      .chart-axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 0.74rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .legend {
+        display: grid;
+        gap: 10px;
+      }
+
+      .legend-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px dashed var(--grid);
+      }
+
+      .swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+      }
+
+      .legend-name {
+        font-weight: 600;
+      }
+
+      .legend-meta {
+        font-size: 0.88rem;
+      }
+
+      .callout {
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: var(--panel-strong);
+        border: 1px solid var(--grid);
+      }
+
+      .callout strong {
+        color: var(--ink);
+      }
+
+      .callout ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .callout li + li {
+        margin-top: 6px;
+      }
+
+      .footer-note {
+        margin-top: 18px;
+        font-size: 0.8rem;
+      }
+
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 980px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .app {
+          padding: 28px 22px 36px;
+          margin: 0;
+          max-width: 100%;
+        }
+
+        .title-block h1 {
+          font-size: 1.8rem;
+        }
+
+        .title-block p {
+          font-size: 0.88rem;
+        }
+
+        .header-actions {
+          width: 100%;
+          justify-content: flex-start;
+        }
+
+        .nav-link,
+        .theme-toggle,
+        .status-pill {
+          flex: 1 1 auto;
+          justify-content: center;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .app {
+          padding: 24px 18px 36px;
+          margin: 0;
+          max-width: 100%;
+        }
+
+        .hero-grid,
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .panel-head {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div class="title-block">
+          <h1 id="page-title">__DASH_TITLE__</h1>
+          <p id="page-description">__DASH_DESCRIPTION__</p>
+        </div>
+        <div class="header-actions">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link" href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a>
+          <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
+          <div class="status-pill" id="status-pill">
+            <span class="status-dot"></span>
+            <span id="status-text">Disconnected</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <div class="card">
+          <h3>Broker</h3>
+          <div class="metric-value mono" id="broker-chip">--</div>
+          <div class="metric-sub" id="broker-transport">--</div>
+        </div>
+        <div class="card">
+          <h3>Unique Packet Rate</h3>
+          <div class="metric-value" id="pps-total">0.00/s</div>
+          <div class="metric-sub" id="pps-window">Last 60s window</div>
+        </div>
+        <div class="card">
+          <h3>Unique Packets</h3>
+          <div class="metric-value" id="packets-total">0</div>
+          <div class="metric-sub" id="packets-last">No packet yet</div>
+        </div>
+        <div class="card">
+          <h3>Last Packet</h3>
+          <div class="metric-value mono" id="last-packet-clock">--</div>
+          <div class="metric-sub" id="last-packet-age">Waiting for packet telemetry</div>
+        </div>
+      </section>
+
+      <section class="metrics">
+        <div class="card">
+          <h3>Flood</h3>
+          <div class="metric-value" id="route-flood">0.00/s</div>
+          <div class="metric-sub" id="route-flood-meta">0 packets in window</div>
+        </div>
+        <div class="card">
+          <h3>Direct</h3>
+          <div class="metric-value" id="route-direct">0.00/s</div>
+          <div class="metric-sub" id="route-direct-meta">0 packets in window</div>
+        </div>
+        <div class="card">
+          <h3>Trace</h3>
+          <div class="metric-value" id="payload-trace">0.00/s</div>
+          <div class="metric-sub" id="payload-trace-meta">0 packets in window</div>
+        </div>
+        <div class="card">
+          <h3>Advert</h3>
+          <div class="metric-value" id="payload-advert">0.00/s</div>
+          <div class="metric-sub" id="payload-advert-meta">0 packets in window</div>
+        </div>
+        <div class="card">
+          <h3>Message</h3>
+          <div class="metric-value" id="payload-message">0.00/s</div>
+          <div class="metric-sub" id="payload-message-meta">0 packets in window</div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <div class="stack">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Route Mix Timeline</h2>
+                <div class="panel-sub">Flood vs direct share across the full packet-retention window.</div>
+              </div>
+              <div class="mono" id="route-window-meta">0 buckets</div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="route-chart"></canvas>
+              <div class="chart-axis">
+                <span>Older</span>
+                <span>Now</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Payload Mix Timeline</h2>
+                <div class="panel-sub">Trace, advert, message, and other packet-type share across retained traffic.</div>
+              </div>
+              <div class="mono" id="payload-window-meta">0 buckets</div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="payload-chart"></canvas>
+              <div class="chart-axis">
+                <span>Older</span>
+                <span>Now</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Route Mix</h2>
+                <div class="panel-sub">Current window share.</div>
+              </div>
+            </div>
+            <div class="legend" id="route-legend"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Payload Mix</h2>
+                <div class="panel-sub">Current window share.</div>
+              </div>
+            </div>
+            <div class="legend" id="payload-legend"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Metric Rules</h2>
+                <div class="panel-sub">How this page counts traffic.</div>
+              </div>
+            </div>
+            <div class="callout">
+              <strong>Source:</strong> only MQTT topics ending in <span class="mono">/packets</span>.<br />
+              <strong>Route classes:</strong> <span class="mono">F</span> = flood, <span class="mono">D</span> = direct.<br />
+              <strong>Payload classes:</strong> <span class="mono">4</span> = advert, <span class="mono">8/9</span> = trace, <span class="mono">2/5</span> = message.<br />
+              <strong>Dedupe:</strong> repeated copies of the same packet collapse by packet hash or raw payload so flood repeats do not inflate the rate.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p class="footer-note">Streaming MQTT packet telemetry in real time. This traffic page stays public like the main dashboard while protected API endpoints remain token-gated.</p>
+    </div>
+
+    <script>
+      const ROUTE_KEYS = ["flood", "direct", "other"];
+      const PAYLOAD_KEYS = ["trace", "advert", "message", "other"];
+      const ROUTE_META = {
+        flood: { label: "Flood", color: "#ffbe6b" },
+        direct: { label: "Direct", color: "#4aa3ff" },
+        other: { label: "Other", color: "#7a8898" },
+      };
+      const PAYLOAD_META = {
+        trace: { label: "Trace", color: "#ffbe6b" },
+        advert: { label: "Advert", color: "#5de2c5" },
+        message: { label: "Message", color: "#4aa3ff" },
+        other: { label: "Other", color: "#7a8898" },
+      };
+
+      const state = {
+        broker: {},
+        traffic: {
+          window_seconds: 60,
+          history_seconds: 180,
+          bucket_seconds: 1,
+          unique_packets_total: 0,
+          packets_per_second: 0,
+          last_packet_at: 0,
+          route_counts: emptyCounts(ROUTE_KEYS),
+          route_rates: emptyCounts(ROUTE_KEYS),
+          payload_counts: emptyCounts(PAYLOAD_KEYS),
+          payload_rates: emptyCounts(PAYLOAD_KEYS),
+          history: [],
+        },
+      };
+
+      const elements = {
+        statusPill: document.getElementById("status-pill"),
+        statusText: document.getElementById("status-text"),
+        brokerChip: document.getElementById("broker-chip"),
+        brokerTransport: document.getElementById("broker-transport"),
+        ppsTotal: document.getElementById("pps-total"),
+        ppsWindow: document.getElementById("pps-window"),
+        packetsTotal: document.getElementById("packets-total"),
+        packetsLast: document.getElementById("packets-last"),
+        routeFlood: document.getElementById("route-flood"),
+        routeFloodMeta: document.getElementById("route-flood-meta"),
+        routeDirect: document.getElementById("route-direct"),
+        routeDirectMeta: document.getElementById("route-direct-meta"),
+        payloadTrace: document.getElementById("payload-trace"),
+        payloadTraceMeta: document.getElementById("payload-trace-meta"),
+        payloadAdvert: document.getElementById("payload-advert"),
+        payloadAdvertMeta: document.getElementById("payload-advert-meta"),
+        payloadMessage: document.getElementById("payload-message"),
+        payloadMessageMeta: document.getElementById("payload-message-meta"),
+        lastPacketClock: document.getElementById("last-packet-clock"),
+        lastPacketAge: document.getElementById("last-packet-age"),
+        routeLegend: document.getElementById("route-legend"),
+        payloadLegend: document.getElementById("payload-legend"),
+        routeChart: document.getElementById("route-chart"),
+        payloadChart: document.getElementById("payload-chart"),
+        routeWindowMeta: document.getElementById("route-window-meta"),
+        payloadWindowMeta: document.getElementById("payload-window-meta"),
+        themeToggle: document.getElementById("theme-toggle"),
+      };
+
+      function emptyCounts(keys) {
+        return keys.reduce((acc, key) => {
+          acc[key] = 0;
+          return acc;
+        }, {});
+      }
+
+      function normalizeCounts(keys, source, fallback = 0) {
+        const counts = emptyCounts(keys);
+        const input = source || {};
+        keys.forEach((key) => {
+          const value = Number(input[key]);
+          counts[key] = Number.isFinite(value) ? value : fallback;
+        });
+        return counts;
+      }
+
+      function normalizeHistory(history, historySeconds) {
+        if (!Array.isArray(history)) return [];
+        return history
+          .map((bucket) => ({
+            ts: Number(bucket.ts) || 0,
+            bucket_seconds: Math.max(1, Number(bucket.bucket_seconds) || 1),
+            total: Number(bucket.total) || 0,
+            route_counts: normalizeCounts(ROUTE_KEYS, bucket.route_counts),
+            payload_counts: normalizeCounts(PAYLOAD_KEYS, bucket.payload_counts),
+          }))
+          .filter((bucket) => bucket.ts > 0)
+          .sort((a, b) => a.ts - b.ts)
+          .slice(-historySeconds);
+      }
+
+      function normalizeTraffic(traffic, currentHistory = []) {
+        const value = traffic || {};
+        const historySeconds = Math.max(60, Number(value.history_seconds) || 180);
+        const history = normalizeHistory(value.history, historySeconds);
+        const bucketSeconds = Math.max(
+          1,
+          Number(value.bucket_seconds) || (history[0] ? history[0].bucket_seconds : 1)
+        );
+        return {
+          window_seconds: Math.max(1, Number(value.window_seconds) || 60),
+          history_seconds: historySeconds,
+          bucket_seconds: bucketSeconds,
+          unique_packets_total: Number(value.unique_packets_total) || 0,
+          packets_per_second: Number(value.packets_per_second) || 0,
+          last_packet_at: Number(value.last_packet_at) || 0,
+          route_counts: normalizeCounts(ROUTE_KEYS, value.route_counts),
+          route_rates: normalizeCounts(ROUTE_KEYS, value.route_rates),
+          payload_counts: normalizeCounts(PAYLOAD_KEYS, value.payload_counts),
+          payload_rates: normalizeCounts(PAYLOAD_KEYS, value.payload_rates),
+          history: history.length ? history : normalizeHistory(currentHistory, historySeconds),
+        };
+      }
+
+      function formatRate(value) {
+        return `${Number(value || 0).toFixed(2)}/s`;
+      }
+
+      function formatNumber(value) {
+        return Number(value || 0).toLocaleString();
+      }
+
+      function formatClock(timestamp) {
+        if (!timestamp) return "--";
+        return new Date(timestamp * 1000).toLocaleTimeString();
+      }
+
+      function formatAge(timestamp) {
+        if (!timestamp) return "No packet yet";
+        const delta = Math.max(0, Math.floor(Date.now() / 1000 - timestamp));
+        if (delta < 60) return `${delta}s ago`;
+        if (delta < 3600) return `${Math.floor(delta / 60)}m ago`;
+        if (delta < 86400) return `${Math.floor(delta / 3600)}h ago`;
+        return `${Math.floor(delta / 86400)}d ago`;
+      }
+
+      function formatPercent(value, total) {
+        if (!total) return "0%";
+        return `${Math.round((value / total) * 100)}%`;
+      }
+
+      function formatDuration(seconds) {
+        const value = Math.max(1, Number(seconds) || 0);
+        if (value < 60) return `${value}s`;
+        if (value < 3600) return `${Math.round(value / 60)}m`;
+        if (value % 3600 === 0) return `${Math.round(value / 3600)}h`;
+        return `${(value / 3600).toFixed(1)}h`;
+      }
+
+      function brokerLabel() {
+        const broker = state.broker || {};
+        return broker.display_host || (broker.host ? `${broker.host}:${broker.port}` : "--");
+      }
+
+      function applySnapshot(data) {
+        state.broker = data.broker || {};
+        state.traffic = normalizeTraffic(data.traffic);
+        renderAll();
+      }
+
+      function appendTrafficEvent(currentHistory, traffic, event) {
+        const historySeconds = traffic.history_seconds;
+        const bucketSeconds = Math.max(1, Number(traffic.bucket_seconds) || 1);
+        const eventTs = Math.floor(Number(event && event.ts) || 0);
+        if (!eventTs) return normalizeHistory(currentHistory, historySeconds);
+        const cutoff = eventTs - historySeconds + 1;
+        const bucketTs = Math.floor(eventTs / bucketSeconds) * bucketSeconds;
+        const next = normalizeHistory(currentHistory, historySeconds)
+          .filter((bucket) => (bucket.ts + bucketSeconds - 1) >= cutoff)
+          .map((bucket) => ({
+            ts: bucket.ts,
+            bucket_seconds: bucket.bucket_seconds || bucketSeconds,
+            total: bucket.total,
+            route_counts: normalizeCounts(ROUTE_KEYS, bucket.route_counts),
+            payload_counts: normalizeCounts(PAYLOAD_KEYS, bucket.payload_counts),
+          }));
+        let bucket = next.find((entry) => entry.ts === bucketTs);
+        if (!bucket) {
+          bucket = {
+            ts: bucketTs,
+            bucket_seconds: bucketSeconds,
+            total: 0,
+            route_counts: emptyCounts(ROUTE_KEYS),
+            payload_counts: emptyCounts(PAYLOAD_KEYS),
+          };
+          next.push(bucket);
+          next.sort((a, b) => a.ts - b.ts);
+        }
+        bucket.total += 1;
+        if (ROUTE_KEYS.includes(event.route)) {
+          bucket.route_counts[event.route] += 1;
+        } else {
+          bucket.route_counts.other += 1;
+        }
+        if (PAYLOAD_KEYS.includes(event.payload)) {
+          bucket.payload_counts[event.payload] += 1;
+        } else {
+          bucket.payload_counts.other += 1;
+        }
+        const maxBuckets = Math.max(1, Math.ceil(historySeconds / bucketSeconds));
+        return next
+          .filter((entry) => (entry.ts + bucketSeconds - 1) >= cutoff)
+          .slice(-maxBuckets);
+      }
+
+      function applyTrafficUpdate(message) {
+        const nextTraffic = normalizeTraffic(message.traffic, state.traffic.history);
+        nextTraffic.history = appendTrafficEvent(state.traffic.history, nextTraffic, message.event || null);
+        state.traffic = nextTraffic;
+        renderAll();
+      }
+
+      function applyBrokerUpdate(broker) {
+        state.broker = broker || {};
+        renderAll();
+      }
+
+      function renderBroker() {
+        const connected = Boolean(state.broker.connected);
+        elements.statusPill.classList.toggle("connected", connected);
+        elements.statusText.textContent = connected ? "Connected" : "Disconnected";
+        elements.brokerChip.textContent = brokerLabel();
+        const transport = state.broker.transport || "tcp";
+        const tls = state.broker.tls ? "TLS" : "Plain";
+        elements.brokerTransport.textContent = `${transport.toUpperCase()} · ${tls} · ${state.broker.topic || "--"}`;
+      }
+
+      function renderMetrics() {
+        const traffic = state.traffic;
+        elements.ppsTotal.textContent = formatRate(traffic.packets_per_second);
+        elements.ppsWindow.textContent = `Last ${traffic.window_seconds}s window`;
+        elements.packetsTotal.textContent = formatNumber(traffic.unique_packets_total);
+        elements.packetsLast.textContent = traffic.last_packet_at ? `Last unique packet ${formatAge(traffic.last_packet_at)}` : "No packet yet";
+        elements.routeFlood.textContent = formatRate(traffic.route_rates.flood);
+        elements.routeFloodMeta.textContent = `${formatNumber(traffic.route_counts.flood)} packets in window`;
+        elements.routeDirect.textContent = formatRate(traffic.route_rates.direct);
+        elements.routeDirectMeta.textContent = `${formatNumber(traffic.route_counts.direct)} packets in window`;
+        elements.payloadTrace.textContent = formatRate(traffic.payload_rates.trace);
+        elements.payloadTraceMeta.textContent = `${formatNumber(traffic.payload_counts.trace)} packets in window`;
+        elements.payloadAdvert.textContent = formatRate(traffic.payload_rates.advert);
+        elements.payloadAdvertMeta.textContent = `${formatNumber(traffic.payload_counts.advert)} packets in window`;
+        elements.payloadMessage.textContent = formatRate(traffic.payload_rates.message);
+        elements.payloadMessageMeta.textContent = `${formatNumber(traffic.payload_counts.message)} packets in window`;
+        elements.lastPacketClock.textContent = formatClock(traffic.last_packet_at);
+        elements.lastPacketAge.textContent = formatAge(traffic.last_packet_at);
+        const historyLabel = `${formatDuration(traffic.history_seconds)} window · ${formatDuration(traffic.bucket_seconds)} bins`;
+        elements.routeWindowMeta.textContent = historyLabel;
+        elements.payloadWindowMeta.textContent = historyLabel;
+      }
+
+      function renderLegend(container, keys, meta, counts, rates) {
+        const total = keys.reduce((sum, key) => sum + (counts[key] || 0), 0);
+        container.innerHTML = keys
+          .map((key) => `
+            <div class="legend-row">
+              <span class="swatch" style="background:${meta[key].color}"></span>
+              <span class="legend-name">${meta[key].label}</span>
+              <span class="legend-meta">${formatRate(rates[key])}</span>
+              <span class="legend-meta">${formatPercent(counts[key], total)}</span>
+            </div>
+          `)
+          .join("");
+      }
+
+      function drawPercentChart(canvas, history, keys, meta, countKey) {
+        const ctx = canvas.getContext("2d");
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(320, Math.floor(rect.width));
+        const height = Math.max(220, Math.floor(rect.height));
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
+        ctx.fillRect(0, 0, width, height);
+
+        const bars = history.slice(-Math.max(1, width));
+        if (!bars.length) {
+          ctx.fillStyle = "rgba(154, 167, 182, 0.9)";
+          ctx.font = '500 14px "Space Grotesk"';
+          ctx.fillText("Waiting for packet telemetry", 18, height / 2);
+          return;
+        }
+
+        for (let guide = 1; guide < 4; guide += 1) {
+          const y = Math.round((height / 4) * guide) + 0.5;
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.07)";
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+
+        const barWidth = width / bars.length;
+        bars.forEach((bucket, index) => {
+          const x = index * barWidth;
+          const counts = bucket[countKey] || {};
+          const total = keys.reduce((sum, key) => sum + (Number(counts[key]) || 0), 0);
+          let y = height;
+          if (!total) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+            ctx.fillRect(x, height - 4, Math.max(1, barWidth - 1), 4);
+            return;
+          }
+          keys.forEach((key) => {
+            const value = Number(counts[key]) || 0;
+            if (!value) return;
+            const segmentHeight = (value / total) * height;
+            y -= segmentHeight;
+            ctx.fillStyle = meta[key].color;
+            ctx.fillRect(x, y, Math.max(1, barWidth - 1), segmentHeight);
+          });
+        });
+      }
+
+      function renderCharts() {
+        drawPercentChart(elements.routeChart, state.traffic.history, ROUTE_KEYS, ROUTE_META, "route_counts");
+        drawPercentChart(elements.payloadChart, state.traffic.history, PAYLOAD_KEYS, PAYLOAD_META, "payload_counts");
+      }
+
+      function renderAll() {
+        renderBroker();
+        renderMetrics();
+        renderLegend(elements.routeLegend, ROUTE_KEYS, ROUTE_META, state.traffic.route_counts, state.traffic.route_rates);
+        renderLegend(elements.payloadLegend, PAYLOAD_KEYS, PAYLOAD_META, state.traffic.payload_counts, state.traffic.payload_rates);
+        renderCharts();
+      }
+
+      function initTheme() {
+        const storedTheme = localStorage.getItem("theme");
+        if (storedTheme === "light") {
+          document.documentElement.setAttribute("data-theme", "light");
+          elements.themeToggle.textContent = "Dark Mode";
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+          elements.themeToggle.textContent = "Light Mode";
+        }
+      }
+
+      function init() {
+        initTheme();
+        const scheme = location.protocol === "https:" ? "wss" : "ws";
+        const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+        ws.addEventListener("message", (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === "snapshot") {
+            applySnapshot(data);
+          } else if (data.type === "traffic_update") {
+            applyTrafficUpdate(data);
+          } else if (data.type === "broker_status") {
+            applyBrokerUpdate(data.broker);
+          }
+        });
+
+        window.addEventListener("resize", renderCharts);
+        elements.themeToggle.addEventListener("click", () => {
+          const isLight = document.documentElement.getAttribute("data-theme") === "light";
+          if (isLight) {
+            document.documentElement.removeAttribute("data-theme");
+            localStorage.setItem("theme", "dark");
+            elements.themeToggle.textContent = "Light Mode";
+          } else {
+            document.documentElement.setAttribute("data-theme", "light");
+            localStorage.setItem("theme", "light");
+            elements.themeToggle.textContent = "Dark Mode";
+          }
+          renderCharts();
+        });
+
+        setInterval(() => {
+          renderMetrics();
+        }, 5000);
+      }
+
+      init();
+    </script>
+  </body>
+</html>
