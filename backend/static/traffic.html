@@ -291,10 +291,79 @@
         padding: 14px;
       }
 
+      .chart-stage {
+        position: relative;
+      }
+
       canvas {
         width: 100%;
         height: 260px;
         display: block;
+        border-radius: 12px;
+      }
+
+      .chart-tooltip {
+        position: absolute;
+        min-width: 200px;
+        max-width: 260px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--grid);
+        background: rgba(8, 14, 21, 0.94);
+        box-shadow: var(--shadow);
+        color: var(--ink);
+        font-size: 0.8rem;
+        line-height: 1.45;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 120ms ease, transform 120ms ease;
+        z-index: 2;
+      }
+
+      [data-theme="light"] .chart-tooltip {
+        background: rgba(244, 246, 251, 0.96);
+      }
+
+      .chart-tooltip.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .chart-tooltip-title {
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .chart-tooltip-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .chart-tooltip-row + .chart-tooltip-row {
+        margin-top: 6px;
+      }
+
+      .chart-tooltip-key {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .chart-tooltip-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+      }
+
+      .chart-tooltip-meta {
+        color: var(--muted);
       }
 
       .chart-axis {
@@ -519,7 +588,10 @@
               <div class="mono" id="route-window-meta">0 buckets</div>
             </div>
             <div class="chart-wrap">
-              <canvas id="route-chart"></canvas>
+              <div class="chart-stage">
+                <canvas id="route-chart"></canvas>
+                <div class="chart-tooltip" id="route-tooltip" aria-hidden="true"></div>
+              </div>
               <div class="chart-axis">
                 <span>Older</span>
                 <span>Now</span>
@@ -536,7 +608,10 @@
               <div class="mono" id="payload-window-meta">0 buckets</div>
             </div>
             <div class="chart-wrap">
-              <canvas id="payload-chart"></canvas>
+              <div class="chart-stage">
+                <canvas id="payload-chart"></canvas>
+                <div class="chart-tooltip" id="payload-tooltip" aria-hidden="true"></div>
+              </div>
               <div class="chart-axis">
                 <span>Older</span>
                 <span>Now</span>
@@ -643,9 +718,16 @@
         payloadLegend: document.getElementById("payload-legend"),
         routeChart: document.getElementById("route-chart"),
         payloadChart: document.getElementById("payload-chart"),
+        routeTooltip: document.getElementById("route-tooltip"),
+        payloadTooltip: document.getElementById("payload-tooltip"),
         routeWindowMeta: document.getElementById("route-window-meta"),
         payloadWindowMeta: document.getElementById("payload-window-meta"),
         themeToggle: document.getElementById("theme-toggle"),
+      };
+
+      const chartState = {
+        route: { points: [], bucketSeconds: 1, keys: ROUTE_KEYS, meta: ROUTE_META, countKey: "route_counts" },
+        payload: { points: [], bucketSeconds: 1, keys: PAYLOAD_KEYS, meta: PAYLOAD_META, countKey: "payload_counts" },
       };
 
       function emptyCounts(keys) {
@@ -728,6 +810,18 @@
       function formatPercent(value, total) {
         if (!total) return "0%";
         return `${Math.round((value / total) * 100)}%`;
+      }
+
+      function formatTimeRange(ts, bucketSeconds) {
+        const start = new Date(ts * 1000);
+        const end = new Date((ts + Math.max(1, bucketSeconds) - 1) * 1000);
+        const sameDay = start.toDateString() === end.toDateString();
+        const startTime = start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        const endTime = end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        if (sameDay) {
+          return `${start.toLocaleDateString()} · ${startTime} - ${endTime}`;
+        }
+        return `${start.toLocaleString()} - ${end.toLocaleString()}`;
       }
 
       function formatDuration(seconds) {
@@ -853,7 +947,58 @@
           .join("");
       }
 
-      function drawPercentChart(canvas, history, keys, meta, countKey) {
+      function buildTooltipHtml(bucket, keys, meta, countKey, bucketSeconds) {
+        const counts = bucket[countKey] || {};
+        const total = Number(bucket.total) || 0;
+        const rows = keys
+          .map((key) => {
+            const value = Number(counts[key]) || 0;
+            return `
+              <div class="chart-tooltip-row">
+                <div class="chart-tooltip-key">
+                  <span class="chart-tooltip-swatch" style="background:${meta[key].color}"></span>
+                  <span>${meta[key].label}</span>
+                </div>
+                <div class="chart-tooltip-meta">${value} · ${formatPercent(value, total)}</div>
+              </div>
+            `;
+          })
+          .join("");
+        return `
+          <div class="chart-tooltip-title">${formatTimeRange(bucket.ts, bucketSeconds)}</div>
+          <div class="chart-tooltip-row">
+            <div class="chart-tooltip-key"><strong>Total</strong></div>
+            <div class="chart-tooltip-meta">${total} packets</div>
+          </div>
+          ${rows}
+        `;
+      }
+
+      function hideTooltip(tooltip) {
+        tooltip.classList.remove("visible");
+        tooltip.setAttribute("aria-hidden", "true");
+      }
+
+      function positionTooltip(tooltip, canvas, point) {
+        const rect = canvas.getBoundingClientRect();
+        const containerRect = canvas.parentElement.getBoundingClientRect();
+        const maxLeft = containerRect.width - tooltip.offsetWidth - 8;
+        const desiredLeft = point.x + 16;
+        const left = Math.max(8, Math.min(maxLeft, desiredLeft));
+        const desiredTop = point.y - tooltip.offsetHeight - 12;
+        const top = desiredTop < 8 ? point.y + 12 : desiredTop;
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      }
+
+      function showTooltip(tooltip, canvas, point, bucket, keys, meta, countKey, bucketSeconds) {
+        tooltip.innerHTML = buildTooltipHtml(bucket, keys, meta, countKey, bucketSeconds);
+        tooltip.classList.add("visible");
+        tooltip.setAttribute("aria-hidden", "false");
+        positionTooltip(tooltip, canvas, point);
+      }
+
+      function drawPercentChart(kind, canvas, tooltip, history, keys, meta, countKey, bucketSeconds) {
         const ctx = canvas.getContext("2d");
         const rect = canvas.getBoundingClientRect();
         const width = Math.max(320, Math.floor(rect.width));
@@ -864,51 +1009,162 @@
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         ctx.clearRect(0, 0, width, height);
 
+        const leftPad = 40;
+        const rightPad = 14;
+        const topPad = 12;
+        const bottomPad = 22;
+        const plotWidth = width - leftPad - rightPad;
+        const plotHeight = height - topPad - bottomPad;
+
         ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
         ctx.fillRect(0, 0, width, height);
 
         const bars = history.slice(-Math.max(1, width));
+        chartState[kind].points = [];
+        chartState[kind].bucketSeconds = bucketSeconds;
         if (!bars.length) {
           ctx.fillStyle = "rgba(154, 167, 182, 0.9)";
           ctx.font = '500 14px "Space Grotesk"';
           ctx.fillText("Waiting for packet telemetry", 18, height / 2);
+          hideTooltip(tooltip);
           return;
         }
 
-        for (let guide = 1; guide < 4; guide += 1) {
-          const y = Math.round((height / 4) * guide) + 0.5;
+        ctx.font = '500 11px "IBM Plex Mono"';
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (let guide = 0; guide <= 4; guide += 1) {
+          const ratioY = guide / 4;
+          const y = Math.round(topPad + (plotHeight * ratioY)) + 0.5;
           ctx.strokeStyle = "rgba(255, 255, 255, 0.07)";
           ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(width, y);
+          ctx.moveTo(leftPad, y);
+          ctx.lineTo(width - rightPad, y);
           ctx.stroke();
+          const pct = `${100 - (ratioY * 100)}%`;
+          ctx.fillStyle = "rgba(154, 167, 182, 0.8)";
+          ctx.fillText(pct, leftPad - 8, y);
         }
 
-        const barWidth = width / bars.length;
+        const barWidth = plotWidth / bars.length;
+        let hoverPoint = null;
         bars.forEach((bucket, index) => {
-          const x = index * barWidth;
+          const x = leftPad + (index * barWidth);
           const counts = bucket[countKey] || {};
           const total = keys.reduce((sum, key) => sum + (Number(counts[key]) || 0), 0);
-          let y = height;
+          let y = topPad + plotHeight;
           if (!total) {
             ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
-            ctx.fillRect(x, height - 4, Math.max(1, barWidth - 1), 4);
+            ctx.fillRect(x, topPad + plotHeight - 4, Math.max(1, barWidth - 1), 4);
+            chartState[kind].points.push({
+              x,
+              y: topPad + plotHeight - 2,
+              width: Math.max(1, barWidth - 1),
+              bucket,
+            });
             return;
           }
           keys.forEach((key) => {
             const value = Number(counts[key]) || 0;
             if (!value) return;
-            const segmentHeight = (value / total) * height;
+            const segmentHeight = (value / total) * plotHeight;
             y -= segmentHeight;
             ctx.fillStyle = meta[key].color;
             ctx.fillRect(x, y, Math.max(1, barWidth - 1), segmentHeight);
           });
+          chartState[kind].points.push({
+            x,
+            y: topPad,
+            width: Math.max(1, barWidth - 1),
+            bucket,
+          });
+        });
+
+        const activeBucket = chartState[kind].activeBucket;
+        if (activeBucket) {
+          const point = chartState[kind].points.find((entry) => entry.bucket.ts === activeBucket.ts);
+          if (point) {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(point.x + (point.width / 2), topPad);
+            ctx.lineTo(point.x + (point.width / 2), topPad + plotHeight);
+            ctx.stroke();
+            hoverPoint = point;
+          }
+        }
+
+        if (hoverPoint) {
+          showTooltip(
+            tooltip,
+            canvas,
+            { x: hoverPoint.x + (hoverPoint.width / 2), y: topPad + 20 },
+            hoverPoint.bucket,
+            keys,
+            meta,
+            countKey,
+            bucketSeconds
+          );
+        }
+      }
+
+      function bindChartHover(kind, canvas, tooltip, keys, meta, countKey) {
+        if (canvas.dataset.hoverBound === "true") {
+          return;
+        }
+        canvas.dataset.hoverBound = "true";
+        canvas.addEventListener("mousemove", (event) => {
+          const rect = canvas.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const stateEntry = chartState[kind];
+          const point = stateEntry.points.find((entry) => x >= entry.x && x <= (entry.x + entry.width));
+          if (!point) {
+            stateEntry.activeBucket = null;
+            hideTooltip(tooltip);
+            renderCharts();
+            return;
+          }
+          stateEntry.activeBucket = point.bucket;
+          renderCharts();
+          showTooltip(
+            tooltip,
+            canvas,
+            { x: point.x + (point.width / 2), y: event.clientY - rect.top },
+            point.bucket,
+            keys,
+            meta,
+            countKey,
+            stateEntry.bucketSeconds
+          );
+        });
+        canvas.addEventListener("mouseleave", () => {
+          chartState[kind].activeBucket = null;
+          hideTooltip(tooltip);
+          renderCharts();
         });
       }
 
       function renderCharts() {
-        drawPercentChart(elements.routeChart, state.traffic.history, ROUTE_KEYS, ROUTE_META, "route_counts");
-        drawPercentChart(elements.payloadChart, state.traffic.history, PAYLOAD_KEYS, PAYLOAD_META, "payload_counts");
+        drawPercentChart(
+          "route",
+          elements.routeChart,
+          elements.routeTooltip,
+          state.traffic.history,
+          ROUTE_KEYS,
+          ROUTE_META,
+          "route_counts",
+          state.traffic.bucket_seconds
+        );
+        drawPercentChart(
+          "payload",
+          elements.payloadChart,
+          elements.payloadTooltip,
+          state.traffic.history,
+          PAYLOAD_KEYS,
+          PAYLOAD_META,
+          "payload_counts",
+          state.traffic.bucket_seconds
+        );
       }
 
       function renderAll() {
@@ -946,6 +1202,8 @@
         });
 
         window.addEventListener("resize", renderCharts);
+        bindChartHover("route", elements.routeChart, elements.routeTooltip, ROUTE_KEYS, ROUTE_META, "route_counts");
+        bindChartHover("payload", elements.payloadChart, elements.payloadTooltip, PAYLOAD_KEYS, PAYLOAD_META, "payload_counts");
         elements.themeToggle.addEventListener("click", () => {
           const isLight = document.documentElement.getAttribute("data-theme") === "light";
           if (isLight) {
