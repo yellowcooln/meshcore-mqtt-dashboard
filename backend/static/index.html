@@ -191,6 +191,16 @@
         color: var(--accent);
       }
 
+      .footer-link {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .footer-link:hover {
+        text-decoration: underline;
+      }
+
       [data-theme="light"] .theme-toggle {
         border-color: rgba(24, 40, 64, 0.2);
       }
@@ -534,7 +544,6 @@
           <p id="dash-subtitle">__DASH_DESCRIPTION__</p>
         </div>
         <div class="header-actions">
-          <a class="github-link" href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a>
           <a class="github-link" href="/traffic">Traffic</a>
           __DASH_EXTERNAL_LINK__
           <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
@@ -604,7 +613,10 @@
         </div>
       </section>
 
-      <p class="footer-note">Streaming MQTT data in real time. $SYS metrics appear when enabled and exposed by the broker.</p>
+      <p class="footer-note">
+        Streaming MQTT data in real time. $SYS metrics appear when enabled and exposed by the broker.
+        <a class="footer-link" href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a>
+      </p>
     </div>
 
     <script>
