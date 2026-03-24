@@ -1,5 +1,7 @@
 import sqlite3
 
+from fastapi.testclient import TestClient
+
 import app as dashboard_app
 
 
@@ -13,6 +15,8 @@ def test_snapshot_includes_empty_traffic_state(client):
   assert traffic["window_seconds"] == dashboard_app.TRAFFIC_HISTORY_SECONDS
   assert traffic["history_seconds"] == dashboard_app.TRAFFIC_HISTORY_SECONDS
   assert traffic["bucket_seconds"] >= 1
+  assert traffic["top_talkers"] == []
+  assert traffic["bursts"] == []
   assert len(traffic["history"]) <= dashboard_app.TRAFFIC_CHART_BUCKETS
 
 
@@ -40,18 +44,27 @@ def test_record_traffic_event_dedupes_by_hash_and_updates_rates():
     "route": "flood",
     "payload": "trace",
     "dedupe_key": "same-hash",
+    "node_id": "node-a",
+    "name": "Alpha",
+    "topic": "meshcore/BOS/node-a/packets",
   }
   duplicate_event = {
     "ts": 101.0,
     "route": "flood",
     "payload": "trace",
     "dedupe_key": "same-hash",
+    "node_id": "node-a",
+    "name": "Alpha",
+    "topic": "meshcore/BOS/node-a/packets",
   }
   second_event = {
     "ts": 110.0,
     "route": "direct",
     "payload": "advert",
     "dedupe_key": "other-hash",
+    "node_id": "node-b",
+    "name": "Bravo",
+    "topic": "meshcore/BOS/node-b/packets",
   }
 
   assert dashboard_app._record_traffic_event(first_event) is not None
@@ -66,6 +79,8 @@ def test_record_traffic_event_dedupes_by_hash_and_updates_rates():
   assert traffic["payload_counts"]["trace"] == 1
   assert traffic["payload_counts"]["advert"] == 1
   assert traffic["packets_per_second"] == round(2 / dashboard_app.TRAFFIC_HISTORY_SECONDS, 2)
+  assert traffic["top_talkers"][0]["node_id"] == "node-b"
+  assert len(traffic["bursts"]) >= 1
 
 
 def test_build_traffic_aggregates_history_to_retention_window(monkeypatch):
@@ -173,6 +188,54 @@ def test_load_traffic_events_backfills_from_packets(monkeypatch, tmp_path):
         "SELECT COUNT(*) FROM traffic_events"
       ).fetchone()[0]
     assert count == 2
+  finally:
+    dashboard_app._reset_traffic_state()
+    dashboard_app._close_packet_db()
+    dashboard_app.packet_db = original_db
+    dashboard_app.PACKET_DB_PATH = original_path
+
+
+def test_public_traffic_packets_endpoint_returns_deduped_redacted_rows(monkeypatch, tmp_path):
+  db_path = tmp_path / "traffic-public.db"
+  original_path = dashboard_app.PACKET_DB_PATH
+  original_db = dashboard_app.packet_db
+
+  packet_json = (
+    '{"packet_type":"8","route":"F","hash":"same-hash","raw":"2100deadbeef","ip":"192.168.1.50"}'
+  )
+  other_json = (
+    '{"packet_type":"4","route":"D","hash":"other-hash","raw":"0400feedface"}'
+  )
+
+  try:
+    monkeypatch.setattr(dashboard_app, "start_mqtt", lambda: None)
+    monkeypatch.setattr(dashboard_app, "stop_mqtt", lambda: None)
+    dashboard_app.DASH_API_TOKEN = ""
+    dashboard_app.packet_db = None
+    dashboard_app.PACKET_DB_PATH = str(db_path)
+    dashboard_app._init_packet_db()
+    with dashboard_app.packet_db_lock:
+      dashboard_app.packet_db.executemany(
+        """
+        INSERT INTO packets (ts, topic, node_id, name, role, payload_text, payload_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+          (100.0, "meshcore/BOS/node-a/packets", "node-a", "Alpha", None, packet_json, packet_json),
+          (101.0, "meshcore/BOS/node-a/packets", "node-a", "Alpha", None, packet_json, packet_json),
+          (102.0, "meshcore/BOS/node-b/packets", "node-b", "Bravo", None, other_json, other_json),
+        ],
+      )
+      dashboard_app.packet_db.commit()
+
+    with TestClient(dashboard_app.app) as client:
+      response = client.get("/traffic/packets?start=99&end=103&limit=10")
+      assert response.status_code == 200
+      payload = response.json()
+    assert payload["enabled"] is True
+    assert len(payload["packets"]) == 2
+    assert payload["packets"][0]["route"] in ("flood", "direct")
+    assert "[redacted" in payload["packets"][1]["payload_json"] or "[redacted" in payload["packets"][0]["payload_json"]
   finally:
     dashboard_app._reset_traffic_state()
     dashboard_app._close_packet_db()

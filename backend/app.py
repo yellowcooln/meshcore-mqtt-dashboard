@@ -23,6 +23,7 @@ STATIC_DIR = os.path.join(ROOT_DIR, "static")
 INDEX_PATH = os.path.join(STATIC_DIR, "index.html")
 TRAFFIC_PATH = os.path.join(STATIC_DIR, "traffic.html")
 DATA_DIR = os.path.join(os.path.dirname(ROOT_DIR), "data")
+APP_VERSION = "v1.3.0"
 
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
@@ -203,6 +204,24 @@ ROLE_HINTS = (
   ("companion", "companion"),
   ("portable", "companion"),
 )
+PAYLOAD_ROLE_HINTS = (
+  ("repeater", "repeater"),
+  ("relay", "repeater"),
+  ("router", "repeater"),
+  ("observer", "room"),
+  ("meshcore-ha", "room"),
+  ("home assistant", "room"),
+  (" room ", "room"),
+  ("room-", "room"),
+  ("-room", "room"),
+  ("server", "room"),
+  ("mqtt", "room"),
+  ("bridge", "room"),
+  ("gateway", "room"),
+  ("portable", "companion"),
+  ("handheld", "companion"),
+  ("phone", "companion"),
+)
 SENSITIVE_DETAIL_KEYS = {
   "ip",
   "ipaddress",
@@ -251,6 +270,9 @@ TRAFFIC_HISTORY_SECONDS = (
   PACKET_RETENTION_SECONDS if PACKET_RETENTION_SECONDS > 0 else max(180, STATS_WINDOW_SECONDS)
 )
 TRAFFIC_CHART_BUCKETS = 240
+TRAFFIC_TOP_TALKERS_LIMIT = 8
+TRAFFIC_BURST_LIMIT = 6
+TRAFFIC_DRILLDOWN_LIMIT = 200
 
 traffic_events = deque()
 traffic_identity_queue = deque()
@@ -601,6 +623,29 @@ def _infer_role_from_name(name: Optional[str]) -> Optional[str]:
   return None
 
 
+def _infer_role_from_payload(topic: str, payload: Any) -> Optional[str]:
+  signals = []
+  topic_lower = topic.strip().lower()
+  if topic_lower:
+    signals.append(topic_lower)
+  if not isinstance(payload, dict):
+    combined = " ".join(signals)
+  else:
+    for key in ("origin", "name", "model", "client_version", "firmware_version", "vendor"):
+      value = payload.get(key)
+      if isinstance(value, str):
+        cleaned = value.strip().lower()
+        if cleaned:
+          signals.append(cleaned)
+    combined = " ".join(signals)
+  if not combined:
+    return None
+  for token, role in PAYLOAD_ROLE_HINTS:
+    if token in combined:
+      return role
+  return None
+
+
 def _extract_details(payload: Any) -> Dict[str, Any]:
   if not isinstance(payload, dict):
     return {}
@@ -663,12 +708,16 @@ def _update_node(topic: str, payload_info: Dict[str, Any]) -> NodeState:
     if payload_json is not None:
       name = _extract_name(payload_json)
       role = _extract_role(payload_json)
+      hinted_payload_role = _infer_role_from_payload(topic, payload_json)
       if name:
         node.name = name
         name_cache[node_id] = name
       if role:
         node.role = role
         node.role_source = "payload"
+      elif hinted_payload_role:
+        node.role = hinted_payload_role
+        node.role_source = "payload_hint"
       details = _extract_details(payload_json)
       if details:
         node.details.update(details)
@@ -705,6 +754,12 @@ def _update_sys(topic: str, payload_info: Dict[str, Any]) -> Any:
   return sys_value
 
 
+def _should_ignore_retained_message(topic: str, msg: mqtt.MQTTMessage) -> bool:
+  if not getattr(msg, "retain", False):
+    return False
+  return topic.endswith("/internal")
+
+
 def _record_message() -> None:
   global message_total, last_message_at
   now = time.time()
@@ -728,6 +783,21 @@ def _record_message() -> None:
 
 def _empty_traffic_counts(keys: tuple) -> Dict[str, int]:
   return {key: 0 for key in keys}
+
+
+def _resolve_packet_name(node_id: Optional[str], name_hint: Optional[str]) -> Optional[str]:
+  if name_hint:
+    cleaned = str(name_hint).strip()
+    if cleaned:
+      return cleaned
+  if not node_id:
+    return None
+  with state_lock:
+    node = nodes.get(node_id)
+    if node and node.name:
+      return node.name
+    cached = name_cache.get(node_id)
+  return cached or None
 
 
 def _classify_route_label(value: Any) -> str:
@@ -776,15 +846,26 @@ def _extract_packet_event(topic: str, payload_info: Dict[str, Any]) -> Optional[
   dedupe_key = "|".join(part for part in dedupe_parts if part)
   if not dedupe_key:
     dedupe_key = f"{topic}|{payload_info.get('text', '')}"
+  node_id = _extract_node_id(payload_json, topic)
+  packet_name = _resolve_packet_name(node_id, _extract_name(payload_json))
   return {
     "ts": time.time(),
     "route": _classify_route_label(route_value),
     "payload": _classify_payload_label(packet_type),
     "dedupe_key": dedupe_key,
+    "node_id": node_id,
+    "name": packet_name,
+    "topic": topic,
   }
 
 
-def _build_packet_event_from_row(topic: str, payload_json_text: str, ts: float) -> Optional[Dict[str, Any]]:
+def _build_packet_event_from_row(
+  topic: str,
+  payload_json_text: str,
+  ts: float,
+  node_id: Optional[str] = None,
+  name: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
   if not topic.endswith("/packets"):
     return None
   if not payload_json_text:
@@ -810,11 +891,16 @@ def _build_packet_event_from_row(topic: str, payload_json_text: str, ts: float) 
   dedupe_key = "|".join(part for part in dedupe_parts if part)
   if not dedupe_key:
     dedupe_key = f"{topic}|{payload_json_text}"
+  resolved_node_id = node_id or _extract_node_id(payload_json, topic)
+  packet_name = _resolve_packet_name(resolved_node_id, name or _extract_name(payload_json))
   return {
     "ts": float(ts or time.time()),
     "route": _classify_route_label(route_value),
     "payload": _classify_payload_label(packet_type),
     "dedupe_key": dedupe_key,
+    "node_id": resolved_node_id,
+    "name": packet_name,
+    "topic": topic,
   }
 
 
@@ -837,7 +923,15 @@ def _reset_traffic_state() -> None:
   last_traffic_packet_at = 0.0
 
 
-def _append_loaded_traffic_event(ts: float, route: str, payload: str, dedupe_key: str) -> None:
+def _append_loaded_traffic_event(
+  ts: float,
+  route: str,
+  payload: str,
+  dedupe_key: str,
+  node_id: Optional[str] = None,
+  name: Optional[str] = None,
+  topic: Optional[str] = None,
+) -> None:
   global traffic_packets_total, last_traffic_packet_at
   traffic_packets_total += 1
   if ts > last_traffic_packet_at:
@@ -850,6 +944,9 @@ def _append_loaded_traffic_event(ts: float, route: str, payload: str, dedupe_key
       "ts": ts,
       "route": route,
       "payload": payload,
+      "node_id": node_id,
+      "name": name,
+      "topic": topic or "",
     }
   )
   traffic_identity_queue.append((dedupe_key, ts))
@@ -864,14 +961,17 @@ def _persist_traffic_event(packet_event: Dict[str, Any]) -> None:
   with packet_db_lock:
     packet_db.execute(
       """
-      INSERT INTO traffic_events (ts, dedupe_key, route_class, payload_class)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO traffic_events (ts, dedupe_key, route_class, payload_class, node_id, name, topic)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       """,
       (
         now,
         packet_event.get("dedupe_key", ""),
         packet_event.get("route", "other"),
         packet_event.get("payload", "other"),
+        packet_event.get("node_id"),
+        packet_event.get("name"),
+        packet_event.get("topic", ""),
       ),
     )
     if now - last_packet_purge >= 60:
@@ -888,7 +988,7 @@ def _backfill_traffic_events_from_packets() -> None:
   with packet_db_lock:
     rows = packet_db.execute(
       """
-      SELECT ts, topic, payload_json
+      SELECT ts, topic, node_id, name, payload_json
       FROM packets
       WHERE topic LIKE '%/packets' AND payload_json IS NOT NULL AND payload_json != ''
       ORDER BY ts ASC
@@ -900,8 +1000,8 @@ def _backfill_traffic_events_from_packets() -> None:
   seen_recent: Dict[str, float] = {}
   recent_queue = deque()
   inserts = []
-  for ts, topic, payload_json_text in rows:
-    packet_event = _build_packet_event_from_row(topic, payload_json_text, ts)
+  for ts, topic, node_id, name, payload_json_text in rows:
+    packet_event = _build_packet_event_from_row(topic, payload_json_text, ts, node_id, name)
     if not packet_event:
       continue
     event_ts = float(packet_event["ts"])
@@ -921,6 +1021,9 @@ def _backfill_traffic_events_from_packets() -> None:
         dedupe_key,
         packet_event["route"],
         packet_event["payload"],
+        packet_event.get("node_id"),
+        packet_event.get("name"),
+        packet_event.get("topic", topic),
       )
     )
 
@@ -930,8 +1033,8 @@ def _backfill_traffic_events_from_packets() -> None:
   with packet_db_lock:
     packet_db.executemany(
       """
-      INSERT INTO traffic_events (ts, dedupe_key, route_class, payload_class)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO traffic_events (ts, dedupe_key, route_class, payload_class, node_id, name, topic)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       """,
       inserts,
     )
@@ -948,13 +1051,28 @@ def _load_traffic_events() -> None:
     traffic_count = packet_db.execute(
       "SELECT COUNT(*) FROM traffic_events"
     ).fetchone()[0]
+    enriched_count = packet_db.execute(
+      """
+      SELECT COUNT(*)
+      FROM traffic_events
+      WHERE node_id IS NOT NULL OR name IS NOT NULL OR (topic IS NOT NULL AND topic != '')
+      """
+    ).fetchone()[0]
+    packet_count = packet_db.execute(
+      "SELECT COUNT(*) FROM packets WHERE topic LIKE '%/packets'"
+    ).fetchone()[0]
   if traffic_count == 0:
+    _backfill_traffic_events_from_packets()
+  elif enriched_count < traffic_count and packet_count > 0:
+    with packet_db_lock:
+      packet_db.execute("DELETE FROM traffic_events")
+      packet_db.commit()
     _backfill_traffic_events_from_packets()
 
   with packet_db_lock:
     rows = packet_db.execute(
       """
-      SELECT ts, dedupe_key, route_class, payload_class
+      SELECT ts, dedupe_key, route_class, payload_class, node_id, name, topic
       FROM traffic_events
       ORDER BY ts ASC
       """
@@ -962,12 +1080,15 @@ def _load_traffic_events() -> None:
 
   with state_lock:
     _reset_traffic_state()
-    for ts, dedupe_key, route_class, payload_class in rows:
+    for ts, dedupe_key, route_class, payload_class, node_id, name, topic in rows:
       _append_loaded_traffic_event(
         float(ts or 0.0),
         str(route_class or "other"),
         str(payload_class or "other"),
         str(dedupe_key or ""),
+        str(node_id) if node_id else None,
+        str(name) if name else None,
+        str(topic) if topic else "",
       )
     _prune_traffic_state(time.time())
 
@@ -991,6 +1112,9 @@ def _record_traffic_event(packet_event: Optional[Dict[str, Any]]) -> Optional[Di
         "ts": now,
         "route": packet_event.get("route", "other"),
         "payload": packet_event.get("payload", "other"),
+        "node_id": packet_event.get("node_id"),
+        "name": packet_event.get("name"),
+        "topic": packet_event.get("topic", ""),
       }
     )
     traffic_packets_total += 1
@@ -1000,7 +1124,86 @@ def _record_traffic_event(packet_event: Optional[Dict[str, Any]]) -> Optional[Di
     "ts": now,
     "route": packet_event.get("route", "other"),
     "payload": packet_event.get("payload", "other"),
+    "node_id": packet_event.get("node_id"),
+    "name": packet_event.get("name"),
+    "topic": packet_event.get("topic", ""),
   }
+
+
+def _dominant_traffic_key(counts: Dict[str, int], keys: tuple) -> str:
+  best_key = keys[0]
+  best_value = -1
+  for key in keys:
+    value = int(counts.get(key, 0))
+    if value > best_value:
+      best_key = key
+      best_value = value
+  return best_key
+
+
+def _build_top_talkers(events: list, packets_total: int) -> list:
+  talkers: Dict[str, Dict[str, Any]] = {}
+  for event in events:
+    node_id = event.get("node_id")
+    topic = str(event.get("topic") or "")
+    talker_key = str(node_id or topic or "unknown")
+    entry = talkers.get(talker_key)
+    if entry is None:
+      entry = {
+        "node_id": node_id,
+        "name": event.get("name"),
+        "topic": topic,
+        "packets": 0,
+        "last_seen": 0.0,
+        "route_counts": _empty_traffic_counts(TRAFFIC_ROUTE_KEYS),
+        "payload_counts": _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS),
+      }
+      talkers[talker_key] = entry
+    entry["packets"] += 1
+    entry["last_seen"] = max(float(entry["last_seen"]), float(event.get("ts") or 0.0))
+    route_key = str(event.get("route") or "other")
+    payload_key = str(event.get("payload") or "other")
+    entry["route_counts"][route_key] = entry["route_counts"].get(route_key, 0) + 1
+    entry["payload_counts"][payload_key] = entry["payload_counts"].get(payload_key, 0) + 1
+    if not entry.get("name") and event.get("name"):
+      entry["name"] = event.get("name")
+    if not entry.get("topic") and topic:
+      entry["topic"] = topic
+
+  top_talkers = sorted(
+    talkers.values(),
+    key=lambda item: (-int(item["packets"]), -float(item["last_seen"])),
+  )[:TRAFFIC_TOP_TALKERS_LIMIT]
+  for item in top_talkers:
+    item["share"] = round((item["packets"] / packets_total) * 100, 1) if packets_total else 0.0
+    item["route_lead"] = _dominant_traffic_key(item["route_counts"], TRAFFIC_ROUTE_KEYS)
+    item["payload_lead"] = _dominant_traffic_key(item["payload_counts"], TRAFFIC_PAYLOAD_KEYS)
+  return top_talkers
+
+
+def _build_bursts(history: list) -> list:
+  bursts = []
+  for bucket in history:
+    total = int(bucket.get("total", 0))
+    if total <= 0:
+      continue
+    route_counts = bucket.get("route_counts") or _empty_traffic_counts(TRAFFIC_ROUTE_KEYS)
+    payload_counts = bucket.get("payload_counts") or _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS)
+    route_lead = _dominant_traffic_key(route_counts, TRAFFIC_ROUTE_KEYS)
+    payload_lead = _dominant_traffic_key(payload_counts, TRAFFIC_PAYLOAD_KEYS)
+    bursts.append(
+      {
+        "ts": bucket["ts"],
+        "bucket_seconds": bucket["bucket_seconds"],
+        "total": total,
+        "route_lead": route_lead,
+        "route_lead_share": round((route_counts.get(route_lead, 0) / total) * 100, 1),
+        "payload_lead": payload_lead,
+        "payload_lead_share": round((payload_counts.get(payload_lead, 0) / total) * 100, 1),
+      }
+    )
+  bursts.sort(key=lambda item: (-int(item["total"]), -float(item["ts"])))
+  return bursts[:TRAFFIC_BURST_LIMIT]
 
 
 def _build_traffic(now: float, include_history: bool = True) -> Dict[str, Any]:
@@ -1042,9 +1245,6 @@ def _build_traffic(now: float, include_history: bool = True) -> Dict[str, Any]:
     },
   }
 
-  if not include_history:
-    return traffic
-
   history_seconds = max(1, TRAFFIC_HISTORY_SECONDS)
   bucket_seconds = max(1, math.ceil(history_seconds / TRAFFIC_CHART_BUCKETS))
   bucket_count = max(1, math.ceil(history_seconds / bucket_seconds))
@@ -1074,6 +1274,13 @@ def _build_traffic(now: float, include_history: bool = True) -> Dict[str, Any]:
     payload_key = event.get("payload", "other")
     bucket["route_counts"][route_key] = bucket["route_counts"].get(route_key, 0) + 1
     bucket["payload_counts"][payload_key] = bucket["payload_counts"].get(payload_key, 0) + 1
+
+  traffic["top_talkers"] = _build_top_talkers(events, packets_total)
+  traffic["bursts"] = _build_bursts(history)
+
+  if not include_history:
+    traffic["bucket_seconds"] = bucket_seconds
+    return traffic
 
   traffic["bucket_seconds"] = bucket_seconds
   traffic["history"] = history
@@ -1155,6 +1362,19 @@ def _init_packet_db() -> None:
     )
     """
   )
+  traffic_columns = {
+    row[1]
+    for row in packet_db.execute("PRAGMA table_info(traffic_events)").fetchall()
+  }
+  for column_name, column_type in (
+    ("node_id", "TEXT"),
+    ("name", "TEXT"),
+    ("topic", "TEXT"),
+  ):
+    if column_name not in traffic_columns:
+      packet_db.execute(
+        f"ALTER TABLE traffic_events ADD COLUMN {column_name} {column_type}"
+      )
   packet_db.execute("CREATE INDEX IF NOT EXISTS idx_traffic_events_ts ON traffic_events (ts)")
   packet_db.execute(
     "CREATE INDEX IF NOT EXISTS idx_traffic_events_dedupe_ts ON traffic_events (dedupe_key, ts)"
@@ -1266,6 +1486,57 @@ def _fetch_packets(limit: int, node_id: Optional[str]) -> Dict[str, Any]:
   return {"enabled": True, "packets": packets}
 
 
+def _fetch_traffic_packets(start: float, end: float, limit: int) -> Dict[str, Any]:
+  if packet_db is None:
+    return {"enabled": False, "packets": []}
+  start_ts = max(0.0, float(start or 0.0))
+  end_ts = max(start_ts, float(end or start_ts))
+  limit = max(1, min(int(limit or 0), TRAFFIC_DRILLDOWN_LIMIT))
+  fetch_limit = max(limit * 4, 200)
+  with packet_db_lock:
+    rows = packet_db.execute(
+      """
+      SELECT ts, topic, node_id, name, role, payload_text, payload_json
+      FROM packets
+      WHERE ts >= ? AND ts < ? AND topic LIKE '%/packets'
+      ORDER BY ts DESC
+      LIMIT ?
+      """,
+      (start_ts, end_ts, fetch_limit),
+    ).fetchall()
+
+  packets = []
+  seen: Set[str] = set()
+  for row in rows:
+    packet_event = _build_packet_event_from_row(row[1], row[6] or "", row[0], row[2], row[3])
+    dedupe_key = packet_event.get("dedupe_key") if packet_event else None
+    if dedupe_key and dedupe_key in seen:
+      continue
+    if dedupe_key:
+      seen.add(dedupe_key)
+    packets.append(
+      {
+        "ts": row[0],
+        "topic": row[1],
+        "node_id": row[2],
+        "name": row[3],
+        "role": row[4],
+        "route": packet_event.get("route", "other") if packet_event else "other",
+        "payload": packet_event.get("payload", "other") if packet_event else "other",
+        "payload_text": _redact_sensitive_text(row[5] or ""),
+        "payload_json": _redact_payload_json_text(row[6] or ""),
+      }
+    )
+    if len(packets) >= limit:
+      break
+  return {
+    "enabled": True,
+    "start": start_ts,
+    "end": end_ts,
+    "packets": packets,
+  }
+
+
 async def _broadcast_worker() -> None:
   while True:
     message = await broadcast_queue.get()
@@ -1321,6 +1592,9 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
         "received_at": time.time(),
       }
     )
+    return
+
+  if _should_ignore_retained_message(topic, msg):
     return
 
   packet_event = _extract_packet_event(topic, payload_info)
@@ -1426,6 +1700,7 @@ def stop_mqtt() -> None:
 
 @app.on_event("startup")
 async def on_startup():
+  print(f"[mqtt-dashboard] Starting {APP_VERSION}", flush=True)
   app.state.loop = asyncio.get_running_loop()
   app.state.broadcast_task = asyncio.create_task(_broadcast_worker())
   global role_overrides
@@ -1477,6 +1752,15 @@ async def packets(
   node_id: Optional[str] = Query(None),
 ) -> JSONResponse:
   return JSONResponse(_fetch_packets(limit, node_id))
+
+
+@app.get("/traffic/packets")
+async def traffic_packets(
+  start: float = Query(..., ge=0),
+  end: float = Query(..., ge=0),
+  limit: int = Query(80, ge=1, le=TRAFFIC_DRILLDOWN_LIMIT),
+) -> JSONResponse:
+  return JSONResponse(_fetch_traffic_packets(start, end, limit))
 
 
 @app.websocket("/ws")

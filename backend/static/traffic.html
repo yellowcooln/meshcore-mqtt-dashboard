@@ -168,6 +168,16 @@
         color: var(--accent);
       }
 
+      .footer-link {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .footer-link:hover {
+        text-decoration: underline;
+      }
+
       [data-theme="light"] .theme-toggle,
       [data-theme="light"] .nav-link {
         border-color: rgba(24, 40, 64, 0.2);
@@ -258,11 +268,13 @@
         gap: 24px;
         width: 100%;
         min-width: 0;
+        align-items: start;
       }
 
       .stack {
         display: grid;
         gap: 24px;
+        align-content: start;
       }
 
       .panel-head {
@@ -517,6 +529,76 @@
         border-radius: inherit;
       }
 
+      .mini-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .mini-row {
+        padding: 12px 13px;
+        border-radius: 16px;
+        border: 1px solid var(--grid);
+        background: var(--panel-strong);
+      }
+
+      .mini-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .mini-title {
+        font-weight: 700;
+      }
+
+      .mini-value {
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+
+      .mini-meta,
+      .empty-state {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .mini-badges,
+      .sub-panels {
+        display: flex;
+        gap: 8px;
+      }
+
+      .mini-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .sub-panels {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--ink);
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
       .callout {
         padding: 14px 16px;
         border-radius: 16px;
@@ -637,6 +719,10 @@
           flex-direction: column;
           align-items: flex-start;
         }
+
+        .sub-panels {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -649,7 +735,6 @@
         </div>
         <div class="header-actions">
           <a class="nav-link" href="/">Dashboard</a>
-          <a class="nav-link" href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a>
           <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
           <div class="status-pill" id="status-pill">
             <span class="status-dot"></span>
@@ -780,6 +865,28 @@
               </div>
             </div>
           </div>
+
+          <div class="sub-panels">
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Top Talkers</h2>
+                  <div class="panel-sub">Nodes generating the most retained unique traffic.</div>
+                </div>
+              </div>
+              <div class="mini-list" id="talkers-list"></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Burst Detector</h2>
+                  <div class="panel-sub">Highest-volume retained bins across the chart window.</div>
+                </div>
+              </div>
+              <div class="mini-list" id="bursts-list"></div>
+            </div>
+          </div>
         </div>
 
         <div class="stack">
@@ -820,7 +927,10 @@
         </div>
       </section>
 
-      <p class="footer-note">Streaming MQTT packet telemetry in real time. This traffic page stays public like the main dashboard while protected API endpoints remain token-gated.</p>
+      <p class="footer-note">
+        Streaming MQTT packet telemetry in real time. This traffic page stays public like the main dashboard while protected API endpoints remain token-gated.
+        <a class="footer-link" href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a>
+      </p>
     </div>
 
     <script>
@@ -851,6 +961,8 @@
           route_rates: emptyCounts(ROUTE_KEYS),
           payload_counts: emptyCounts(PAYLOAD_KEYS),
           payload_rates: emptyCounts(PAYLOAD_KEYS),
+          top_talkers: [],
+          bursts: [],
           history: [],
         },
       };
@@ -894,6 +1006,8 @@
         payloadPeak: document.getElementById("payload-peak"),
         payloadPeakDetail: document.getElementById("payload-peak-detail"),
         payloadHistoryDetail: document.getElementById("payload-history-detail"),
+        talkersList: document.getElementById("talkers-list"),
+        burstsList: document.getElementById("bursts-list"),
         themeToggle: document.getElementById("theme-toggle"),
       };
 
@@ -953,6 +1067,8 @@
           route_rates: normalizeCounts(ROUTE_KEYS, value.route_rates),
           payload_counts: normalizeCounts(PAYLOAD_KEYS, value.payload_counts),
           payload_rates: normalizeCounts(PAYLOAD_KEYS, value.payload_rates),
+          top_talkers: Array.isArray(value.top_talkers) ? value.top_talkers : [],
+          bursts: Array.isArray(value.bursts) ? value.bursts : [],
           history: history.length ? history : normalizeHistory(currentHistory, historySeconds),
         };
       }
@@ -1014,6 +1130,29 @@
         if (value < 3600) return `${Math.round(value / 60)}m`;
         if (value % 3600 === 0) return `${Math.round(value / 3600)}h`;
         return `${(value / 3600).toFixed(1)}h`;
+      }
+
+      function compactTopic(topic) {
+        const value = String(topic || "").trim();
+        if (!value) return "";
+        const parts = value.split("/").filter(Boolean);
+        if (!parts.length) return value;
+        const last = parts[parts.length - 1];
+        if (last === "packets" && parts.length >= 2) {
+          return parts[parts.length - 2];
+        }
+        if (parts.length >= 2) {
+          return `${parts[parts.length - 2]}/${last}`;
+        }
+        return last;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
       }
 
       function totalForKeys(keys, counts) {
@@ -1216,6 +1355,59 @@
         }
       }
 
+      function renderTalkers() {
+        const talkers = state.traffic.top_talkers || [];
+        if (!talkers.length) {
+          elements.talkersList.innerHTML = '<div class="empty-state">No retained talkers yet.</div>';
+          return;
+        }
+        elements.talkersList.innerHTML = talkers
+          .map((talker) => {
+            const shortTopic = compactTopic(talker.topic);
+            const label = talker.name || talker.node_id || shortTopic || "Unknown";
+            const detail = talker.name && talker.node_id ? talker.node_id : (shortTopic || "No topic");
+            return `
+              <div class="mini-row">
+                <div class="mini-top">
+                  <span class="mini-title">${escapeHtml(label)}</span>
+                  <span class="mini-value">${formatNumber(talker.packets)} packets</span>
+                </div>
+                <div class="mini-meta">${escapeHtml(detail)}</div>
+                <div class="mini-badges">
+                  <span class="badge">${escapeHtml(talker.route_lead || "other")}</span>
+                  <span class="badge">${escapeHtml(talker.payload_lead || "other")}</span>
+                  <span class="badge">${Number(talker.share || 0).toFixed(1)}%</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function renderBursts() {
+        const bursts = state.traffic.bursts || [];
+        if (!bursts.length) {
+          elements.burstsList.innerHTML = '<div class="empty-state">No retained bursts yet.</div>';
+          return;
+        }
+        elements.burstsList.innerHTML = bursts
+          .map((burst) => {
+            return `
+              <div class="mini-row">
+                <div class="mini-top">
+                  <span class="mini-title">${escapeHtml(formatTimeRange(burst.ts, burst.bucket_seconds))}</span>
+                  <span class="mini-value">${formatNumber(burst.total)} packets</span>
+                </div>
+                <div class="mini-badges">
+                  <span class="badge">${escapeHtml(burst.route_lead)} ${Number(burst.route_lead_share || 0).toFixed(0)}%</span>
+                  <span class="badge">${escapeHtml(burst.payload_lead)} ${Number(burst.payload_lead_share || 0).toFixed(0)}%</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
       function buildTooltipHtml(bucket, keys, meta, countKey, bucketSeconds) {
         const counts = bucket[countKey] || {};
         const total = Number(bucket.total) || 0;
@@ -1323,7 +1515,7 @@
 
         const step = bars.length > 1 ? plotWidth / (bars.length - 1) : 0;
         const maxTotal = Math.max(...bars.map((bucket) => Number(bucket.total) || 0), 1);
-        const intensityHeight = Math.min(50, plotHeight * 0.26);
+        const intensityHeight = Math.min(34, plotHeight * 0.18);
         const points = bars.map((bucket, index) => {
           const counts = bucket[countKey] || {};
           return {
@@ -1367,47 +1559,42 @@
         ctx.lineWidth = 1.3;
         ctx.stroke();
 
-        let previousShares = points.map(() => 0);
-        keys.forEach((key) => {
-          const currentShares = points.map((point, index) => {
-            const value = Number(point.counts[key]) || 0;
-            return point.total ? previousShares[index] + (value / point.total) : previousShares[index];
-          });
+        keys.forEach((key, keyIndex) => {
+          const fill = ctx.createLinearGradient(0, topPad, 0, plotBottom);
+          fill.addColorStop(0, rgba(meta[key].color, 0.34));
+          fill.addColorStop(1, rgba(meta[key].color, 0.04));
 
           ctx.beginPath();
           points.forEach((point, index) => {
-            const y = plotBottom - (currentShares[index] * plotHeight);
+            const value = Number(point.counts[key]) || 0;
+            const share = point.total ? (value / point.total) : 0;
+            const y = plotBottom - (share * plotHeight);
             if (index === 0) {
               ctx.moveTo(point.x, y);
             } else {
               ctx.lineTo(point.x, y);
             }
           });
-          for (let index = points.length - 1; index >= 0; index -= 1) {
-            const point = points[index];
-            const y = plotBottom - (previousShares[index] * plotHeight);
-            ctx.lineTo(point.x, y);
-          }
+          ctx.lineTo(points[points.length - 1].x, plotBottom);
+          ctx.lineTo(points[0].x, plotBottom);
           ctx.closePath();
-          const fill = ctx.createLinearGradient(0, topPad, 0, plotBottom);
-          fill.addColorStop(0, rgba(meta[key].color, 0.66));
-          fill.addColorStop(1, rgba(meta[key].color, 0.2));
           ctx.fillStyle = fill;
           ctx.fill();
 
           ctx.beginPath();
           points.forEach((point, index) => {
-            const y = plotBottom - (currentShares[index] * plotHeight);
+            const value = Number(point.counts[key]) || 0;
+            const share = point.total ? (value / point.total) : 0;
+            const y = plotBottom - (share * plotHeight);
             if (index === 0) {
               ctx.moveTo(point.x, y);
             } else {
               ctx.lineTo(point.x, y);
             }
           });
-          ctx.strokeStyle = rgba(meta[key].color, 0.95);
-          ctx.lineWidth = 1.4;
+          ctx.strokeStyle = rgba(meta[key].color, keyIndex === 0 ? 0.95 : 0.88);
+          ctx.lineWidth = keyIndex === 0 ? 2 : 1.6;
           ctx.stroke();
-          previousShares = currentShares;
         });
 
         let hoverPoint = null;
@@ -1526,6 +1713,8 @@
         renderInsights();
         renderLegend(elements.routeLegend, ROUTE_KEYS, ROUTE_META, state.traffic.route_counts, state.traffic.route_rates);
         renderLegend(elements.payloadLegend, PAYLOAD_KEYS, PAYLOAD_META, state.traffic.payload_counts, state.traffic.payload_rates);
+        renderTalkers();
+        renderBursts();
         renderCharts();
       }
 

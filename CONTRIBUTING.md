@@ -21,6 +21,7 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
 
 ## Guidelines
 - Keep `backend/app.py` and `backend/static/index.html` at **2-space indentation**.
+- Keep `backend/static/traffic.html` at 2-space indentation as well.
 - Prefer small helper functions and avoid dumping full payloads in logs.
 - Keep UI changes mobile-friendly and test on narrow screens.
 
@@ -32,6 +33,8 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
   - `http://localhost:8081/snapshot`
   - `http://localhost:8081/stats`
   - `http://localhost:8081/packets?limit=50`
+  - `http://localhost:8081/traffic`
+  - `docker compose logs --tail=20 mqtt-dashboard` should show the running app version at startup
 - Validate share/embed metadata with:
   - `curl -s http://localhost:8081 | rg -n "og:title|og:description|twitter:title|twitter:description"`
 - Validate favicon behavior:
@@ -41,6 +44,11 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
 - Validate external button behavior:
   - With empty `DASH_EXTERNAL_URL`, confirm the external header button is hidden.
   - With valid `DASH_EXTERNAL_URL`, confirm the button appears with `DASH_EXTERNAL_LABEL`.
+- Validate retained traffic behavior:
+  - `/traffic` should render after restart using retained DB-backed history.
+  - Top talkers and burst bins should reflect retained `*/packets` traffic.
+- Validate node presence behavior:
+  - Retained `*/internal` startup replay should not create anonymous online nodes.
 - If `DASH_API_TOKEN` is enabled locally, include `?token=<value>` or send header `X-Dashboard-Token` for `/snapshot`, `/stats`, and `/packets`.
 
 ## Configuration Changes
