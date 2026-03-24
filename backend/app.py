@@ -1010,27 +1010,22 @@ def _build_traffic(now: float, include_history: bool = True) -> Dict[str, Any]:
     packets_total = traffic_packets_total
     last_packet_at = last_traffic_packet_at
 
-  rate_cutoff = now - STATS_WINDOW_SECONDS
+  summary_window_seconds = max(1, TRAFFIC_HISTORY_SECONDS)
   route_counts = _empty_traffic_counts(TRAFFIC_ROUTE_KEYS)
   payload_counts = _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS)
   packet_rate_count = 0
 
   for event in events:
-    if event["ts"] < rate_cutoff:
-      continue
     packet_rate_count += 1
     route_key = event.get("route", "other")
     payload_key = event.get("payload", "other")
     route_counts[route_key] = route_counts.get(route_key, 0) + 1
     payload_counts[payload_key] = payload_counts.get(payload_key, 0) + 1
 
-  if STATS_WINDOW_SECONDS > 0:
-    scale = 1.0 / STATS_WINDOW_SECONDS
-  else:
-    scale = 0.0
+  scale = 1.0 / summary_window_seconds
 
   traffic = {
-    "window_seconds": STATS_WINDOW_SECONDS,
+    "window_seconds": summary_window_seconds,
     "history_seconds": TRAFFIC_HISTORY_SECONDS,
     "unique_packets_total": packets_total,
     "packets_per_second": round(packet_rate_count * scale, 2),

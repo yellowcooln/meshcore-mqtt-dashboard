@@ -10,6 +10,7 @@ def test_snapshot_includes_empty_traffic_state(client):
   assert traffic["packets_per_second"] == 0
   assert traffic["route_rates"]["flood"] == 0
   assert traffic["payload_rates"]["trace"] == 0
+  assert traffic["window_seconds"] == dashboard_app.TRAFFIC_HISTORY_SECONDS
   assert traffic["history_seconds"] == dashboard_app.TRAFFIC_HISTORY_SECONDS
   assert traffic["bucket_seconds"] >= 1
   assert len(traffic["history"]) <= dashboard_app.TRAFFIC_CHART_BUCKETS
@@ -64,7 +65,7 @@ def test_record_traffic_event_dedupes_by_hash_and_updates_rates():
   assert traffic["route_counts"]["direct"] == 1
   assert traffic["payload_counts"]["trace"] == 1
   assert traffic["payload_counts"]["advert"] == 1
-  assert traffic["packets_per_second"] == round(2 / dashboard_app.STATS_WINDOW_SECONDS, 2)
+  assert traffic["packets_per_second"] == round(2 / dashboard_app.TRAFFIC_HISTORY_SECONDS, 2)
 
 
 def test_build_traffic_aggregates_history_to_retention_window(monkeypatch):

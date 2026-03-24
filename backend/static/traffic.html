@@ -270,7 +270,62 @@
         justify-content: space-between;
         gap: 16px;
         align-items: flex-start;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
+      }
+
+      .panel-head-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(132px, 1fr));
+        gap: 10px;
+        flex: 0 0 auto;
+        width: min(100%, 320px);
+      }
+
+      .signal-chip {
+        position: relative;
+        padding: 12px 14px 13px;
+        border-radius: 16px;
+        border: 1px solid var(--grid);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 100%),
+          var(--panel-strong);
+        overflow: hidden;
+      }
+
+      .signal-chip::after {
+        content: "";
+        position: absolute;
+        inset: auto -18% -48% auto;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        opacity: 0.16;
+        background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .signal-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .signal-value {
+        display: block;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.1;
+      }
+
+      .signal-detail {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.76rem;
+        line-height: 1.35;
       }
 
       .panel-head .mono {
@@ -285,10 +340,14 @@
       }
 
       .chart-wrap {
+        position: relative;
         border-radius: 18px;
-        background: var(--panel-strong);
+        background:
+          radial-gradient(circle at 12% 18%, rgba(74, 163, 255, 0.12), transparent 34%),
+          radial-gradient(circle at 88% 14%, rgba(93, 226, 197, 0.1), transparent 30%),
+          var(--panel-strong);
         border: 1px solid var(--grid);
-        padding: 14px;
+        padding: 16px;
       }
 
       .chart-stage {
@@ -376,17 +435,30 @@
         text-transform: uppercase;
       }
 
+      .chart-caption {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .chart-caption strong {
+        color: var(--ink);
+      }
+
       .legend {
         display: grid;
-        gap: 10px;
+        gap: 12px;
       }
 
       .legend-row {
         display: grid;
-        grid-template-columns: auto 1fr auto auto;
-        gap: 10px;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 12px;
         align-items: center;
-        padding: 10px 0;
+        padding: 12px 0;
         border-bottom: 1px dashed var(--grid);
       }
 
@@ -396,12 +468,53 @@
         border-radius: 999px;
       }
 
+      .legend-main {
+        min-width: 0;
+      }
+
+      .legend-topline,
+      .legend-side {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
       .legend-name {
         font-weight: 600;
       }
 
       .legend-meta {
         font-size: 0.88rem;
+      }
+
+      .legend-rate {
+        font-size: 0.92rem;
+        font-weight: 700;
+        text-align: right;
+      }
+
+      .legend-share {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        text-align: right;
+      }
+
+      .legend-bar {
+        position: relative;
+        height: 8px;
+        margin-top: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        overflow: hidden;
+      }
+
+      .legend-bar span {
+        position: absolute;
+        inset: 0 auto 0 0;
+        border-radius: inherit;
       }
 
       .callout {
@@ -460,6 +573,14 @@
           flex-direction: column;
           align-items: flex-start;
         }
+
+        .panel-head {
+          flex-direction: column;
+        }
+
+        .panel-head-meta {
+          width: 100%;
+        }
       }
 
       @media (max-width: 720px) {
@@ -505,6 +626,17 @@
         .panel-head {
           flex-direction: column;
         }
+
+        .panel-head-meta {
+          grid-template-columns: 1fr;
+        }
+
+        .chart-caption,
+        .legend-topline,
+        .legend-side {
+          flex-direction: column;
+          align-items: flex-start;
+        }
       }
     </style>
   </head>
@@ -535,7 +667,7 @@
         <div class="card">
           <h3>Unique Packet Rate</h3>
           <div class="metric-value" id="pps-total">0.00/s</div>
-          <div class="metric-sub" id="pps-window">Last 60s window</div>
+          <div class="metric-sub" id="pps-window">Across the retained traffic window</div>
         </div>
         <div class="card">
           <h3>Unique Packets</h3>
@@ -553,27 +685,27 @@
         <div class="card">
           <h3>Flood</h3>
           <div class="metric-value" id="route-flood">0.00/s</div>
-          <div class="metric-sub" id="route-flood-meta">0 packets in window</div>
+          <div class="metric-sub" id="route-flood-meta">0 packets in retention</div>
         </div>
         <div class="card">
           <h3>Direct</h3>
           <div class="metric-value" id="route-direct">0.00/s</div>
-          <div class="metric-sub" id="route-direct-meta">0 packets in window</div>
+          <div class="metric-sub" id="route-direct-meta">0 packets in retention</div>
         </div>
         <div class="card">
           <h3>Trace</h3>
           <div class="metric-value" id="payload-trace">0.00/s</div>
-          <div class="metric-sub" id="payload-trace-meta">0 packets in window</div>
+          <div class="metric-sub" id="payload-trace-meta">0 packets in retention</div>
         </div>
         <div class="card">
           <h3>Advert</h3>
           <div class="metric-value" id="payload-advert">0.00/s</div>
-          <div class="metric-sub" id="payload-advert-meta">0 packets in window</div>
+          <div class="metric-sub" id="payload-advert-meta">0 packets in retention</div>
         </div>
         <div class="card">
           <h3>Message</h3>
           <div class="metric-value" id="payload-message">0.00/s</div>
-          <div class="metric-sub" id="payload-message-meta">0 packets in window</div>
+          <div class="metric-sub" id="payload-message-meta">0 packets in retention</div>
         </div>
       </section>
 
@@ -585,7 +717,18 @@
                 <h2>Route Mix Timeline</h2>
                 <div class="panel-sub">Flood vs direct share across the full packet-retention window.</div>
               </div>
-              <div class="mono" id="route-window-meta">0 buckets</div>
+              <div class="panel-head-meta">
+                <div class="signal-chip">
+                  <span class="signal-label">Lead Now</span>
+                  <strong class="signal-value" id="route-lead">--</strong>
+                  <span class="signal-detail" id="route-lead-detail">No data in retention</span>
+                </div>
+                <div class="signal-chip">
+                  <span class="signal-label">Peak Bin</span>
+                  <strong class="signal-value" id="route-peak">--</strong>
+                  <span class="signal-detail" id="route-peak-detail">No retained traffic yet</span>
+                </div>
+              </div>
             </div>
             <div class="chart-wrap">
               <div class="chart-stage">
@@ -596,6 +739,10 @@
                 <span>Older</span>
                 <span>Now</span>
               </div>
+              <div class="chart-caption">
+                <span id="route-window-meta">0 buckets</span>
+                <span id="route-history-detail">No retained traffic yet</span>
+              </div>
             </div>
           </div>
 
@@ -605,7 +752,18 @@
                 <h2>Payload Mix Timeline</h2>
                 <div class="panel-sub">Trace, advert, message, and other packet-type share across retained traffic.</div>
               </div>
-              <div class="mono" id="payload-window-meta">0 buckets</div>
+              <div class="panel-head-meta">
+                <div class="signal-chip">
+                  <span class="signal-label">Lead Now</span>
+                  <strong class="signal-value" id="payload-lead">--</strong>
+                  <span class="signal-detail" id="payload-lead-detail">No data in retention</span>
+                </div>
+                <div class="signal-chip">
+                  <span class="signal-label">Peak Bin</span>
+                  <strong class="signal-value" id="payload-peak">--</strong>
+                  <span class="signal-detail" id="payload-peak-detail">No retained traffic yet</span>
+                </div>
+              </div>
             </div>
             <div class="chart-wrap">
               <div class="chart-stage">
@@ -616,6 +774,10 @@
                 <span>Older</span>
                 <span>Now</span>
               </div>
+              <div class="chart-caption">
+                <span id="payload-window-meta">0 buckets</span>
+                <span id="payload-history-detail">No retained traffic yet</span>
+              </div>
             </div>
           </div>
         </div>
@@ -625,7 +787,7 @@
             <div class="panel-head">
               <div>
                 <h2>Route Mix</h2>
-                <div class="panel-sub">Current window share.</div>
+                <div class="panel-sub">Retention-backed share.</div>
               </div>
             </div>
             <div class="legend" id="route-legend"></div>
@@ -635,7 +797,7 @@
             <div class="panel-head">
               <div>
                 <h2>Payload Mix</h2>
-                <div class="panel-sub">Current window share.</div>
+                <div class="panel-sub">Retention-backed share.</div>
               </div>
             </div>
             <div class="legend" id="payload-legend"></div>
@@ -679,7 +841,7 @@
       const state = {
         broker: {},
         traffic: {
-          window_seconds: 60,
+          window_seconds: 180,
           history_seconds: 180,
           bucket_seconds: 1,
           unique_packets_total: 0,
@@ -722,6 +884,16 @@
         payloadTooltip: document.getElementById("payload-tooltip"),
         routeWindowMeta: document.getElementById("route-window-meta"),
         payloadWindowMeta: document.getElementById("payload-window-meta"),
+        routeLead: document.getElementById("route-lead"),
+        routeLeadDetail: document.getElementById("route-lead-detail"),
+        routePeak: document.getElementById("route-peak"),
+        routePeakDetail: document.getElementById("route-peak-detail"),
+        routeHistoryDetail: document.getElementById("route-history-detail"),
+        payloadLead: document.getElementById("payload-lead"),
+        payloadLeadDetail: document.getElementById("payload-lead-detail"),
+        payloadPeak: document.getElementById("payload-peak"),
+        payloadPeakDetail: document.getElementById("payload-peak-detail"),
+        payloadHistoryDetail: document.getElementById("payload-history-detail"),
         themeToggle: document.getElementById("theme-toggle"),
       };
 
@@ -812,6 +984,18 @@
         return `${Math.round((value / total) * 100)}%`;
       }
 
+      function rgba(hex, alpha) {
+        const value = String(hex || "").replace("#", "");
+        if (value.length !== 6) {
+          return `rgba(255, 255, 255, ${alpha})`;
+        }
+        const int = Number.parseInt(value, 16);
+        const red = (int >> 16) & 255;
+        const green = (int >> 8) & 255;
+        const blue = int & 255;
+        return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+      }
+
       function formatTimeRange(ts, bucketSeconds) {
         const start = new Date(ts * 1000);
         const end = new Date((ts + Math.max(1, bucketSeconds) - 1) * 1000);
@@ -830,6 +1014,36 @@
         if (value < 3600) return `${Math.round(value / 60)}m`;
         if (value % 3600 === 0) return `${Math.round(value / 3600)}h`;
         return `${(value / 3600).toFixed(1)}h`;
+      }
+
+      function totalForKeys(keys, counts) {
+        return keys.reduce((sum, key) => sum + (Number(counts[key]) || 0), 0);
+      }
+
+      function getDominantKey(keys, counts) {
+        let leadKey = keys[0];
+        let leadValue = -1;
+        keys.forEach((key) => {
+          const value = Number(counts[key]) || 0;
+          if (value > leadValue) {
+            leadKey = key;
+            leadValue = value;
+          }
+        });
+        return {
+          key: leadKey,
+          value: Math.max(0, leadValue),
+          total: totalForKeys(keys, counts),
+        };
+      }
+
+      function getPeakBucket(history) {
+        return history.reduce((best, bucket) => {
+          if (!best || bucket.total > best.total) {
+            return bucket;
+          }
+          return best;
+        }, null);
       }
 
       function brokerLabel() {
@@ -913,19 +1127,19 @@
       function renderMetrics() {
         const traffic = state.traffic;
         elements.ppsTotal.textContent = formatRate(traffic.packets_per_second);
-        elements.ppsWindow.textContent = `Last ${traffic.window_seconds}s window`;
+        elements.ppsWindow.textContent = `${formatDuration(traffic.window_seconds)} retention window`;
         elements.packetsTotal.textContent = formatNumber(traffic.unique_packets_total);
         elements.packetsLast.textContent = traffic.last_packet_at ? `Last unique packet ${formatAge(traffic.last_packet_at)}` : "No packet yet";
         elements.routeFlood.textContent = formatRate(traffic.route_rates.flood);
-        elements.routeFloodMeta.textContent = `${formatNumber(traffic.route_counts.flood)} packets in window`;
+        elements.routeFloodMeta.textContent = `${formatNumber(traffic.route_counts.flood)} packets in retention`;
         elements.routeDirect.textContent = formatRate(traffic.route_rates.direct);
-        elements.routeDirectMeta.textContent = `${formatNumber(traffic.route_counts.direct)} packets in window`;
+        elements.routeDirectMeta.textContent = `${formatNumber(traffic.route_counts.direct)} packets in retention`;
         elements.payloadTrace.textContent = formatRate(traffic.payload_rates.trace);
-        elements.payloadTraceMeta.textContent = `${formatNumber(traffic.payload_counts.trace)} packets in window`;
+        elements.payloadTraceMeta.textContent = `${formatNumber(traffic.payload_counts.trace)} packets in retention`;
         elements.payloadAdvert.textContent = formatRate(traffic.payload_rates.advert);
-        elements.payloadAdvertMeta.textContent = `${formatNumber(traffic.payload_counts.advert)} packets in window`;
+        elements.payloadAdvertMeta.textContent = `${formatNumber(traffic.payload_counts.advert)} packets in retention`;
         elements.payloadMessage.textContent = formatRate(traffic.payload_rates.message);
-        elements.payloadMessageMeta.textContent = `${formatNumber(traffic.payload_counts.message)} packets in window`;
+        elements.payloadMessageMeta.textContent = `${formatNumber(traffic.payload_counts.message)} packets in retention`;
         elements.lastPacketClock.textContent = formatClock(traffic.last_packet_at);
         elements.lastPacketAge.textContent = formatAge(traffic.last_packet_at);
         const historyLabel = `${formatDuration(traffic.history_seconds)} window · ${formatDuration(traffic.bucket_seconds)} bins`;
@@ -934,17 +1148,72 @@
       }
 
       function renderLegend(container, keys, meta, counts, rates) {
-        const total = keys.reduce((sum, key) => sum + (counts[key] || 0), 0);
+        const total = totalForKeys(keys, counts);
         container.innerHTML = keys
           .map((key) => `
             <div class="legend-row">
               <span class="swatch" style="background:${meta[key].color}"></span>
-              <span class="legend-name">${meta[key].label}</span>
-              <span class="legend-meta">${formatRate(rates[key])}</span>
-              <span class="legend-meta">${formatPercent(counts[key], total)}</span>
+              <div class="legend-main">
+                <div class="legend-topline">
+                  <span class="legend-name">${meta[key].label}</span>
+                  <span class="legend-meta">${formatNumber(counts[key])} packets</span>
+                </div>
+                <div class="legend-bar">
+                  <span style="width:${total ? ((Number(counts[key]) || 0) / total) * 100 : 0}%; background:${meta[key].color}"></span>
+                </div>
+              </div>
+              <div class="legend-side">
+                <span class="legend-rate">${formatRate(rates[key])}</span>
+                <span class="legend-share">${formatPercent(counts[key], total)}</span>
+              </div>
             </div>
           `)
           .join("");
+      }
+
+      function renderInsights() {
+        const routeLead = getDominantKey(ROUTE_KEYS, state.traffic.route_counts);
+        const payloadLead = getDominantKey(PAYLOAD_KEYS, state.traffic.payload_counts);
+        const peakBucket = getPeakBucket(state.traffic.history);
+
+        if (routeLead.total) {
+          elements.routeLead.textContent = ROUTE_META[routeLead.key].label;
+          elements.routeLeadDetail.textContent = `${formatPercent(routeLead.value, routeLead.total)} of ${formatNumber(routeLead.total)} retained packets`;
+        } else {
+          elements.routeLead.textContent = "--";
+          elements.routeLeadDetail.textContent = "No data in retention";
+        }
+
+        if (payloadLead.total) {
+          elements.payloadLead.textContent = PAYLOAD_META[payloadLead.key].label;
+          elements.payloadLeadDetail.textContent = `${formatPercent(payloadLead.value, payloadLead.total)} of ${formatNumber(payloadLead.total)} retained packets`;
+        } else {
+          elements.payloadLead.textContent = "--";
+          elements.payloadLeadDetail.textContent = "No data in retention";
+        }
+
+        if (peakBucket) {
+          const peakRoute = getDominantKey(ROUTE_KEYS, peakBucket.route_counts || {});
+          const peakPayload = getDominantKey(PAYLOAD_KEYS, peakBucket.payload_counts || {});
+          elements.routePeak.textContent = `${formatNumber(peakBucket.total)} packets`;
+          elements.routePeakDetail.textContent = `${ROUTE_META[peakRoute.key].label} led ${formatTimeRange(peakBucket.ts, state.traffic.bucket_seconds)}`;
+          elements.payloadPeak.textContent = `${formatNumber(peakBucket.total)} packets`;
+          elements.payloadPeakDetail.textContent = `${PAYLOAD_META[peakPayload.key].label} led ${formatTimeRange(peakBucket.ts, state.traffic.bucket_seconds)}`;
+        } else {
+          elements.routePeak.textContent = "--";
+          elements.routePeakDetail.textContent = "No retained traffic yet";
+          elements.payloadPeak.textContent = "--";
+          elements.payloadPeakDetail.textContent = "No retained traffic yet";
+        }
+
+        if (state.traffic.history.length) {
+          const latest = state.traffic.history[state.traffic.history.length - 1];
+          elements.routeHistoryDetail.innerHTML = `<strong>${formatNumber(latest.total)}</strong> packets in the newest retained bin`;
+          elements.payloadHistoryDetail.innerHTML = `<strong>${formatNumber(latest.total)}</strong> packets in the newest retained bin`;
+        } else {
+          elements.routeHistoryDetail.textContent = "No retained traffic yet";
+          elements.payloadHistoryDetail.textContent = "No retained traffic yet";
+        }
       }
 
       function buildTooltipHtml(bucket, keys, meta, countKey, bucketSeconds) {
@@ -1009,17 +1278,23 @@
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         ctx.clearRect(0, 0, width, height);
 
-        const leftPad = 40;
-        const rightPad = 14;
-        const topPad = 12;
-        const bottomPad = 22;
+        const leftPad = 44;
+        const rightPad = 16;
+        const topPad = 16;
+        const bottomPad = 28;
         const plotWidth = width - leftPad - rightPad;
         const plotHeight = height - topPad - bottomPad;
+        const plotBottom = topPad + plotHeight;
 
-        ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
+        const surface = ctx.createLinearGradient(0, topPad, 0, plotBottom);
+        surface.addColorStop(0, "rgba(255, 255, 255, 0.03)");
+        surface.addColorStop(1, "rgba(255, 255, 255, 0)");
+        ctx.fillStyle = surface;
         ctx.fillRect(0, 0, width, height);
 
-        const bars = history.slice(-Math.max(1, width));
+        const maxPoints = Math.max(36, Math.floor(plotWidth / 7));
+        const stride = Math.max(1, Math.ceil(history.length / maxPoints));
+        const bars = history.filter((_, index) => index % stride === 0 || index === history.length - 1);
         chartState[kind].points = [];
         chartState[kind].bucketSeconds = bucketSeconds;
         if (!bars.length) {
@@ -1036,7 +1311,7 @@
         for (let guide = 0; guide <= 4; guide += 1) {
           const ratioY = guide / 4;
           const y = Math.round(topPad + (plotHeight * ratioY)) + 0.5;
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.07)";
+          ctx.strokeStyle = guide === 4 ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.07)";
           ctx.beginPath();
           ctx.moveTo(leftPad, y);
           ctx.lineTo(width - rightPad, y);
@@ -1046,59 +1321,137 @@
           ctx.fillText(pct, leftPad - 8, y);
         }
 
-        const barWidth = plotWidth / bars.length;
-        let hoverPoint = null;
-        bars.forEach((bucket, index) => {
-          const x = leftPad + (index * barWidth);
+        const step = bars.length > 1 ? plotWidth / (bars.length - 1) : 0;
+        const maxTotal = Math.max(...bars.map((bucket) => Number(bucket.total) || 0), 1);
+        const intensityHeight = Math.min(50, plotHeight * 0.26);
+        const points = bars.map((bucket, index) => {
           const counts = bucket[countKey] || {};
-          const total = keys.reduce((sum, key) => sum + (Number(counts[key]) || 0), 0);
-          let y = topPad + plotHeight;
-          if (!total) {
-            ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
-            ctx.fillRect(x, topPad + plotHeight - 4, Math.max(1, barWidth - 1), 4);
-            chartState[kind].points.push({
-              x,
-              y: topPad + plotHeight - 2,
-              width: Math.max(1, barWidth - 1),
-              bucket,
-            });
-            return;
-          }
-          keys.forEach((key) => {
-            const value = Number(counts[key]) || 0;
-            if (!value) return;
-            const segmentHeight = (value / total) * plotHeight;
-            y -= segmentHeight;
-            ctx.fillStyle = meta[key].color;
-            ctx.fillRect(x, y, Math.max(1, barWidth - 1), segmentHeight);
-          });
-          chartState[kind].points.push({
-            x,
-            y: topPad,
-            width: Math.max(1, barWidth - 1),
+          return {
             bucket,
+            counts,
+            total: totalForKeys(keys, counts),
+            x: bars.length === 1 ? leftPad + (plotWidth / 2) : leftPad + (index * step),
+          };
+        });
+
+        const intensityColor = kind === "route" ? ROUTE_META.flood.color : PAYLOAD_META.message.color;
+        const intensityAccent = kind === "route" ? ROUTE_META.direct.color : PAYLOAD_META.advert.color;
+        const intensityGradient = ctx.createLinearGradient(0, plotBottom - intensityHeight, 0, plotBottom);
+        intensityGradient.addColorStop(0, rgba(intensityColor, 0.34));
+        intensityGradient.addColorStop(1, rgba(intensityAccent, 0.02));
+        ctx.beginPath();
+        points.forEach((point, index) => {
+          const y = plotBottom - ((point.total / maxTotal) * intensityHeight);
+          if (index === 0) {
+            ctx.moveTo(point.x, y);
+          } else {
+            ctx.lineTo(point.x, y);
+          }
+        });
+        ctx.lineTo(points[points.length - 1].x, plotBottom);
+        ctx.lineTo(points[0].x, plotBottom);
+        ctx.closePath();
+        ctx.fillStyle = intensityGradient;
+        ctx.fill();
+
+        ctx.beginPath();
+        points.forEach((point, index) => {
+          const y = plotBottom - ((point.total / maxTotal) * intensityHeight);
+          if (index === 0) {
+            ctx.moveTo(point.x, y);
+          } else {
+            ctx.lineTo(point.x, y);
+          }
+        });
+        ctx.strokeStyle = rgba(intensityColor, 0.82);
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+
+        let previousShares = points.map(() => 0);
+        keys.forEach((key) => {
+          const currentShares = points.map((point, index) => {
+            const value = Number(point.counts[key]) || 0;
+            return point.total ? previousShares[index] + (value / point.total) : previousShares[index];
+          });
+
+          ctx.beginPath();
+          points.forEach((point, index) => {
+            const y = plotBottom - (currentShares[index] * plotHeight);
+            if (index === 0) {
+              ctx.moveTo(point.x, y);
+            } else {
+              ctx.lineTo(point.x, y);
+            }
+          });
+          for (let index = points.length - 1; index >= 0; index -= 1) {
+            const point = points[index];
+            const y = plotBottom - (previousShares[index] * plotHeight);
+            ctx.lineTo(point.x, y);
+          }
+          ctx.closePath();
+          const fill = ctx.createLinearGradient(0, topPad, 0, plotBottom);
+          fill.addColorStop(0, rgba(meta[key].color, 0.66));
+          fill.addColorStop(1, rgba(meta[key].color, 0.2));
+          ctx.fillStyle = fill;
+          ctx.fill();
+
+          ctx.beginPath();
+          points.forEach((point, index) => {
+            const y = plotBottom - (currentShares[index] * plotHeight);
+            if (index === 0) {
+              ctx.moveTo(point.x, y);
+            } else {
+              ctx.lineTo(point.x, y);
+            }
+          });
+          ctx.strokeStyle = rgba(meta[key].color, 0.95);
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+          previousShares = currentShares;
+        });
+
+        let hoverPoint = null;
+        points.forEach((point, index) => {
+          const previousX = index > 0 ? points[index - 1].x : leftPad;
+          const nextX = index < points.length - 1 ? points[index + 1].x : width - rightPad;
+          chartState[kind].points.push({
+            x: point.x,
+            xStart: index === 0 ? leftPad : (previousX + point.x) / 2,
+            xEnd: index === points.length - 1 ? width - rightPad : (point.x + nextX) / 2,
+            bucket: point.bucket,
           });
         });
 
-        const activeBucket = chartState[kind].activeBucket;
+        const activeBucket = chartState[kind].activeBucket || (points[points.length - 1] && points[points.length - 1].bucket);
         if (activeBucket) {
           const point = chartState[kind].points.find((entry) => entry.bucket.ts === activeBucket.ts);
-          if (point) {
+          const source = points.find((entry) => entry.bucket.ts === activeBucket.ts);
+          if (point && source) {
             ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(point.x + (point.width / 2), topPad);
-            ctx.lineTo(point.x + (point.width / 2), topPad + plotHeight);
+            ctx.moveTo(point.x, topPad);
+            ctx.lineTo(point.x, plotBottom);
+            ctx.stroke();
+            const dominant = getDominantKey(keys, source.counts);
+            const dominantShare = dominant.total ? dominant.value / dominant.total : 0;
+            const dominantY = plotBottom - (dominantShare * plotHeight);
+            ctx.beginPath();
+            ctx.arc(point.x, dominantY, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = meta[dominant.key].color;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
             ctx.stroke();
             hoverPoint = point;
           }
         }
 
-        if (hoverPoint) {
+        if (hoverPoint && chartState[kind].activeBucket) {
           showTooltip(
             tooltip,
             canvas,
-            { x: hoverPoint.x + (hoverPoint.width / 2), y: topPad + 20 },
+            { x: hoverPoint.x, y: topPad + 20 },
             hoverPoint.bucket,
             keys,
             meta,
@@ -1117,7 +1470,7 @@
           const rect = canvas.getBoundingClientRect();
           const x = event.clientX - rect.left;
           const stateEntry = chartState[kind];
-          const point = stateEntry.points.find((entry) => x >= entry.x && x <= (entry.x + entry.width));
+          const point = stateEntry.points.find((entry) => x >= entry.xStart && x <= entry.xEnd);
           if (!point) {
             stateEntry.activeBucket = null;
             hideTooltip(tooltip);
@@ -1129,7 +1482,7 @@
           showTooltip(
             tooltip,
             canvas,
-            { x: point.x + (point.width / 2), y: event.clientY - rect.top },
+            { x: point.x, y: event.clientY - rect.top },
             point.bucket,
             keys,
             meta,
@@ -1170,6 +1523,7 @@
       function renderAll() {
         renderBroker();
         renderMetrics();
+        renderInsights();
         renderLegend(elements.routeLegend, ROUTE_KEYS, ROUTE_META, state.traffic.route_counts, state.traffic.route_rates);
         renderLegend(elements.payloadLegend, PAYLOAD_KEYS, PAYLOAD_META, state.traffic.payload_counts, state.traffic.payload_rates);
         renderCharts();
