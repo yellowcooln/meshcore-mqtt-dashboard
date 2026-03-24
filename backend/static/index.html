@@ -535,7 +535,8 @@
         </div>
         <div class="header-actions">
           <a class="github-link" href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a>
-          <a class="github-link" id="external-link" href="#" target="_blank" rel="noopener" hidden>External</a>
+          <a class="github-link" href="/traffic">Traffic</a>
+          __DASH_EXTERNAL_LINK__
           <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
           <div class="status-pill" id="status-pill">
             <span class="status-dot"></span>
@@ -766,11 +767,11 @@
           document.title = state.broker.title;
         }
         const externalUrl = (state.broker.external_url || "").trim();
-        if (externalUrl) {
+        if (elements.externalLink && externalUrl) {
           elements.externalLink.hidden = false;
           elements.externalLink.href = externalUrl;
           elements.externalLink.textContent = state.broker.external_label || "External";
-        } else {
+        } else if (elements.externalLink) {
           elements.externalLink.hidden = true;
           elements.externalLink.removeAttribute("href");
         }

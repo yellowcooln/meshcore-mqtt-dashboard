@@ -1,5 +1,14 @@
 # Changes
 
+## v1.3.0 - 2026-03-24
+- Added a dedicated public `/traffic` page for retained packet analysis.
+- Added retained traffic charts, top talkers, and burst bins backed by SQLite history.
+- Persisted traffic history in `traffic_events` and rebuild it from `packets` when needed.
+- Added payload-based role inference from `/status` and `/internal` metadata before name fallback.
+- Ignored retained `*/internal` MQTT messages for node presence so startup replay does not create ghost online nodes.
+- Added a startup console log that prints the running app version on launch.
+- Added regression tests for retained `/internal` presence handling and payload-based role inference.
+
 ## v1.2.1 - 2026-03-13
 - Simplified `docker-compose.yaml` to load container runtime vars from `.env` via `env_file`.
 - Added `DASH_BROKER_HOST` so the dashboard can show a cleaner broker endpoint than the actual `MQTT_HOST`.

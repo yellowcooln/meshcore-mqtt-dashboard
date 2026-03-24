@@ -1,8 +1,9 @@
 # MQTT Dashboard
 
-Live MQTT dashboard for node presence, roles, traffic stats, and broker telemetry.
+Live MQTT dashboard for node presence, retained traffic analysis, roles, and broker telemetry.
 
 - Release notes: [CHANGES.MD](./CHANGES.MD)
+- Current version: `v1.3.0`
 - Preview: [https://mcmqttdashboard.bostonme.sh/](https://mcmqttdashboard.bostonme.sh/)
 
 ![Dashboard preview](./docs/example.png)
@@ -42,6 +43,7 @@ CI runs the same suite in GitHub Actions on pull requests and pushes to `main`/`
 
 - Public:
   - `/` (dashboard page)
+  - `/traffic` (retention-backed traffic page)
   - `/ws` (live dashboard websocket)
 - Protected when `DASH_API_TOKEN` is set:
   - `/snapshot`
@@ -92,9 +94,16 @@ Copy `.env.example` and set what you need.
 
 ## Behavior Notes
 
+- The backend prints the running app version to the console on startup.
 - `$SYS` panel is hidden when `SYS_TOPICS_ENABLED=false`.
 - Sensitive IP/MAC values are redacted before UI/API exposure.
 - `client_version` dotted versions (for example `1.0.8.0-e52c5ed`) are preserved.
+- The traffic page uses retained packet history from SQLite across the full `PACKET_RETENTION_SECONDS` window.
+- Traffic history is rebuilt from `packets` into `traffic_events` when needed and persists across restarts.
+- `/traffic` includes retained packet rates, route/payload charts, top talkers, and burst bins.
+- Role inference uses explicit payload roles first, then payload hints from `/status` and `/internal`, then name hints.
+- Retained `*/internal` MQTT messages are ignored for node presence so startup replay does not create ghost online nodes.
+- Node presence is in-memory and repopulates from fresh traffic after restart.
 - Share/embed metadata uses:
   - title from `DASH_TITLE`
   - description `Live node presence, roles, and broker telemetry.`

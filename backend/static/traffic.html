@@ -1,0 +1,1772 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__DASH_TITLE__</title>
+    <meta name="description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="__DASH_TITLE__" />
+    <meta property="og:description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:url" content="__DASH_URL__" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="__DASH_TITLE__" />
+    <meta name="twitter:description" content="__DASH_DESCRIPTION__" />
+    __DASH_FAVICON_TAGS__
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #e7edf5;
+        --muted: #9aa7b6;
+        --panel: #0f1823;
+        --panel-strong: #172333;
+        --accent: #4aa3ff;
+        --accent-2: #5de2c5;
+        --accent-3: #ffbe6b;
+        --warn: #ff7b66;
+        --grid: rgba(255, 255, 255, 0.08);
+        --shadow: 0 26px 64px rgba(0, 0, 0, 0.38);
+        --bg-gradient:
+          radial-gradient(circle at 18% 15%, rgba(74, 163, 255, 0.22), transparent 60%),
+          radial-gradient(circle at 80% 10%, rgba(93, 226, 197, 0.18), transparent 55%),
+          radial-gradient(circle at 85% 80%, rgba(255, 190, 107, 0.12), transparent 50%),
+          linear-gradient(160deg, #0a1119 0%, #0f1a27 50%, #0b1320 100%);
+      }
+
+      [data-theme="light"] {
+        --ink: #1b2430;
+        --muted: #5a6a7a;
+        --panel: #f4f6fb;
+        --panel-strong: #e9eef6;
+        --accent: #1f6fe0;
+        --accent-2: #158a6a;
+        --accent-3: #f0b24a;
+        --warn: #d4584f;
+        --grid: rgba(24, 40, 64, 0.12);
+        --shadow: 0 18px 50px rgba(17, 34, 56, 0.12);
+        --bg-gradient:
+          radial-gradient(circle at 18% 15%, rgba(31, 111, 224, 0.18), transparent 60%),
+          radial-gradient(circle at 82% 12%, rgba(21, 138, 106, 0.1), transparent 50%),
+          radial-gradient(circle at 88% 75%, rgba(240, 178, 74, 0.12), transparent 50%),
+          linear-gradient(160deg, #f5f7fb 0%, #eef2f7 52%, #f8fafd 100%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+      }
+
+      html {
+        background: var(--bg-gradient);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+        color: var(--ink);
+        overflow-x: hidden;
+        background: transparent;
+      }
+
+      .app {
+        position: relative;
+        padding: 36px 40px 48px;
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        animation: fade-in 600ms ease-out;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      .header-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .title-block h1 {
+        margin: 0;
+        font-size: 2.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .title-block p {
+        margin: 6px 0 0;
+        font-size: 0.95rem;
+        color: var(--muted);
+        max-width: 64ch;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--warn);
+        box-shadow: 0 0 0 4px rgba(255, 141, 109, 0.2);
+      }
+
+      .status-pill.connected .status-dot {
+        background: var(--accent-2);
+        box-shadow: 0 0 0 4px rgba(109, 214, 168, 0.2);
+      }
+
+      .theme-toggle,
+      .nav-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: var(--panel);
+        color: var(--ink);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-decoration: none;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+      }
+
+      .nav-link:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .footer-link {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .footer-link:hover {
+        text-decoration: underline;
+      }
+
+      [data-theme="light"] .theme-toggle,
+      [data-theme="light"] .nav-link {
+        border-color: rgba(24, 40, 64, 0.2);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 18px;
+        margin-bottom: 24px;
+        width: 100%;
+      }
+
+      .card,
+      .panel {
+        background: var(--panel);
+        border: 1px solid rgba(93, 75, 52, 0.08);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        min-width: 0;
+        width: 100%;
+        animation: rise 540ms ease-out;
+      }
+
+      .card {
+        padding: 18px 18px 16px;
+      }
+
+      .panel {
+        border-radius: 22px;
+        padding: 18px 18px 20px;
+        overflow: hidden;
+      }
+
+      .card h3,
+      .panel h2 {
+        margin: 0 0 12px;
+      }
+
+      .card h3 {
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .panel h2 {
+        font-size: 1.1rem;
+      }
+
+      .metric-value {
+        font-size: 1.9rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        overflow-wrap: anywhere;
+      }
+
+      .metric-sub,
+      .panel-sub,
+      .footer-note,
+      .callout,
+      .legend-meta {
+        color: var(--muted);
+      }
+
+      .metric-sub,
+      .panel-sub,
+      .footer-note,
+      .callout {
+        font-size: 0.86rem;
+        line-height: 1.55;
+      }
+
+      .metric-sub {
+        margin-top: 8px;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+        margin-bottom: 24px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr);
+        gap: 24px;
+        width: 100%;
+        min-width: 0;
+        align-items: start;
+      }
+
+      .stack {
+        display: grid;
+        gap: 24px;
+        align-content: start;
+      }
+
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+      }
+
+      .panel-head-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(132px, 1fr));
+        gap: 10px;
+        flex: 0 0 auto;
+        width: min(100%, 320px);
+      }
+
+      .signal-chip {
+        position: relative;
+        padding: 12px 14px 13px;
+        border-radius: 16px;
+        border: 1px solid var(--grid);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 100%),
+          var(--panel-strong);
+        overflow: hidden;
+      }
+
+      .signal-chip::after {
+        content: "";
+        position: absolute;
+        inset: auto -18% -48% auto;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        opacity: 0.16;
+        background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .signal-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .signal-value {
+        display: block;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.1;
+      }
+
+      .signal-detail {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.76rem;
+        line-height: 1.35;
+      }
+
+      .panel-head .mono {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .mono {
+        font-family: "IBM Plex Mono", "Courier New", monospace;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .chart-wrap {
+        position: relative;
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 12% 18%, rgba(74, 163, 255, 0.12), transparent 34%),
+          radial-gradient(circle at 88% 14%, rgba(93, 226, 197, 0.1), transparent 30%),
+          var(--panel-strong);
+        border: 1px solid var(--grid);
+        padding: 16px;
+      }
+
+      .chart-stage {
+        position: relative;
+      }
+
+      canvas {
+        width: 100%;
+        height: 260px;
+        display: block;
+        border-radius: 12px;
+      }
+
+      .chart-tooltip {
+        position: absolute;
+        min-width: 200px;
+        max-width: 260px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--grid);
+        background: rgba(8, 14, 21, 0.94);
+        box-shadow: var(--shadow);
+        color: var(--ink);
+        font-size: 0.8rem;
+        line-height: 1.45;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 120ms ease, transform 120ms ease;
+        z-index: 2;
+      }
+
+      [data-theme="light"] .chart-tooltip {
+        background: rgba(244, 246, 251, 0.96);
+      }
+
+      .chart-tooltip.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .chart-tooltip-title {
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .chart-tooltip-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .chart-tooltip-row + .chart-tooltip-row {
+        margin-top: 6px;
+      }
+
+      .chart-tooltip-key {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .chart-tooltip-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+      }
+
+      .chart-tooltip-meta {
+        color: var(--muted);
+      }
+
+      .chart-axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 0.74rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .chart-caption {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .chart-caption strong {
+        color: var(--ink);
+      }
+
+      .legend {
+        display: grid;
+        gap: 12px;
+      }
+
+      .legend-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px dashed var(--grid);
+      }
+
+      .swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+      }
+
+      .legend-main {
+        min-width: 0;
+      }
+
+      .legend-topline,
+      .legend-side {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .legend-name {
+        font-weight: 600;
+      }
+
+      .legend-meta {
+        font-size: 0.88rem;
+      }
+
+      .legend-rate {
+        font-size: 0.92rem;
+        font-weight: 700;
+        text-align: right;
+      }
+
+      .legend-share {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        text-align: right;
+      }
+
+      .legend-bar {
+        position: relative;
+        height: 8px;
+        margin-top: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        overflow: hidden;
+      }
+
+      .legend-bar span {
+        position: absolute;
+        inset: 0 auto 0 0;
+        border-radius: inherit;
+      }
+
+      .mini-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .mini-row {
+        padding: 12px 13px;
+        border-radius: 16px;
+        border: 1px solid var(--grid);
+        background: var(--panel-strong);
+      }
+
+      .mini-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .mini-title {
+        font-weight: 700;
+      }
+
+      .mini-value {
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+
+      .mini-meta,
+      .empty-state {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .mini-badges,
+      .sub-panels {
+        display: flex;
+        gap: 8px;
+      }
+
+      .mini-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .sub-panels {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--ink);
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .callout {
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: var(--panel-strong);
+        border: 1px solid var(--grid);
+      }
+
+      .callout strong {
+        color: var(--ink);
+      }
+
+      .callout ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .callout li + li {
+        margin-top: 6px;
+      }
+
+      .footer-note {
+        margin-top: 18px;
+        font-size: 0.8rem;
+      }
+
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 980px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .panel-head {
+          flex-direction: column;
+        }
+
+        .panel-head-meta {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .app {
+          padding: 28px 22px 36px;
+          margin: 0;
+          max-width: 100%;
+        }
+
+        .title-block h1 {
+          font-size: 1.8rem;
+        }
+
+        .title-block p {
+          font-size: 0.88rem;
+        }
+
+        .header-actions {
+          width: 100%;
+          justify-content: flex-start;
+        }
+
+        .nav-link,
+        .theme-toggle,
+        .status-pill {
+          flex: 1 1 auto;
+          justify-content: center;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .app {
+          padding: 24px 18px 36px;
+          margin: 0;
+          max-width: 100%;
+        }
+
+        .hero-grid,
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .panel-head {
+          flex-direction: column;
+        }
+
+        .panel-head-meta {
+          grid-template-columns: 1fr;
+        }
+
+        .chart-caption,
+        .legend-topline,
+        .legend-side {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .sub-panels {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div class="title-block">
+          <h1 id="page-title">__DASH_TITLE__</h1>
+          <p id="page-description">__DASH_DESCRIPTION__</p>
+        </div>
+        <div class="header-actions">
+          <a class="nav-link" href="/">Dashboard</a>
+          <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
+          <div class="status-pill" id="status-pill">
+            <span class="status-dot"></span>
+            <span id="status-text">Disconnected</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <div class="card">
+          <h3>Broker</h3>
+          <div class="metric-value mono" id="broker-chip">--</div>
+          <div class="metric-sub" id="broker-transport">--</div>
+        </div>
+        <div class="card">
+          <h3>Unique Packet Rate</h3>
+          <div class="metric-value" id="pps-total">0.00/s</div>
+          <div class="metric-sub" id="pps-window">Across the retained traffic window</div>
+        </div>
+        <div class="card">
+          <h3>Unique Packets</h3>
+          <div class="metric-value" id="packets-total">0</div>
+          <div class="metric-sub" id="packets-last">No packet yet</div>
+        </div>
+        <div class="card">
+          <h3>Last Packet</h3>
+          <div class="metric-value mono" id="last-packet-clock">--</div>
+          <div class="metric-sub" id="last-packet-age">Waiting for packet telemetry</div>
+        </div>
+      </section>
+
+      <section class="metrics">
+        <div class="card">
+          <h3>Flood</h3>
+          <div class="metric-value" id="route-flood">0.00/s</div>
+          <div class="metric-sub" id="route-flood-meta">0 packets in retention</div>
+        </div>
+        <div class="card">
+          <h3>Direct</h3>
+          <div class="metric-value" id="route-direct">0.00/s</div>
+          <div class="metric-sub" id="route-direct-meta">0 packets in retention</div>
+        </div>
+        <div class="card">
+          <h3>Trace</h3>
+          <div class="metric-value" id="payload-trace">0.00/s</div>
+          <div class="metric-sub" id="payload-trace-meta">0 packets in retention</div>
+        </div>
+        <div class="card">
+          <h3>Advert</h3>
+          <div class="metric-value" id="payload-advert">0.00/s</div>
+          <div class="metric-sub" id="payload-advert-meta">0 packets in retention</div>
+        </div>
+        <div class="card">
+          <h3>Message</h3>
+          <div class="metric-value" id="payload-message">0.00/s</div>
+          <div class="metric-sub" id="payload-message-meta">0 packets in retention</div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <div class="stack">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Route Mix Timeline</h2>
+                <div class="panel-sub">Flood vs direct share across the full packet-retention window.</div>
+              </div>
+              <div class="panel-head-meta">
+                <div class="signal-chip">
+                  <span class="signal-label">Lead Now</span>
+                  <strong class="signal-value" id="route-lead">--</strong>
+                  <span class="signal-detail" id="route-lead-detail">No data in retention</span>
+                </div>
+                <div class="signal-chip">
+                  <span class="signal-label">Peak Bin</span>
+                  <strong class="signal-value" id="route-peak">--</strong>
+                  <span class="signal-detail" id="route-peak-detail">No retained traffic yet</span>
+                </div>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <div class="chart-stage">
+                <canvas id="route-chart"></canvas>
+                <div class="chart-tooltip" id="route-tooltip" aria-hidden="true"></div>
+              </div>
+              <div class="chart-axis">
+                <span>Older</span>
+                <span>Now</span>
+              </div>
+              <div class="chart-caption">
+                <span id="route-window-meta">0 buckets</span>
+                <span id="route-history-detail">No retained traffic yet</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Payload Mix Timeline</h2>
+                <div class="panel-sub">Trace, advert, message, and other packet-type share across retained traffic.</div>
+              </div>
+              <div class="panel-head-meta">
+                <div class="signal-chip">
+                  <span class="signal-label">Lead Now</span>
+                  <strong class="signal-value" id="payload-lead">--</strong>
+                  <span class="signal-detail" id="payload-lead-detail">No data in retention</span>
+                </div>
+                <div class="signal-chip">
+                  <span class="signal-label">Peak Bin</span>
+                  <strong class="signal-value" id="payload-peak">--</strong>
+                  <span class="signal-detail" id="payload-peak-detail">No retained traffic yet</span>
+                </div>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <div class="chart-stage">
+                <canvas id="payload-chart"></canvas>
+                <div class="chart-tooltip" id="payload-tooltip" aria-hidden="true"></div>
+              </div>
+              <div class="chart-axis">
+                <span>Older</span>
+                <span>Now</span>
+              </div>
+              <div class="chart-caption">
+                <span id="payload-window-meta">0 buckets</span>
+                <span id="payload-history-detail">No retained traffic yet</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-panels">
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Top Talkers</h2>
+                  <div class="panel-sub">Nodes generating the most retained unique traffic.</div>
+                </div>
+              </div>
+              <div class="mini-list" id="talkers-list"></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Burst Detector</h2>
+                  <div class="panel-sub">Highest-volume retained bins across the chart window.</div>
+                </div>
+              </div>
+              <div class="mini-list" id="bursts-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Route Mix</h2>
+                <div class="panel-sub">Retention-backed share.</div>
+              </div>
+            </div>
+            <div class="legend" id="route-legend"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Payload Mix</h2>
+                <div class="panel-sub">Retention-backed share.</div>
+              </div>
+            </div>
+            <div class="legend" id="payload-legend"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Metric Rules</h2>
+                <div class="panel-sub">How this page counts traffic.</div>
+              </div>
+            </div>
+            <div class="callout">
+              <strong>Source:</strong> only MQTT topics ending in <span class="mono">/packets</span>.<br />
+              <strong>Route classes:</strong> <span class="mono">F</span> = flood, <span class="mono">D</span> = direct.<br />
+              <strong>Payload classes:</strong> <span class="mono">4</span> = advert, <span class="mono">8/9</span> = trace, <span class="mono">2/5</span> = message.<br />
+              <strong>Dedupe:</strong> repeated copies of the same packet collapse by packet hash or raw payload so flood repeats do not inflate the rate.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p class="footer-note">
+        Streaming MQTT packet telemetry in real time. This traffic page stays public like the main dashboard while protected API endpoints remain token-gated.
+        <a class="footer-link" href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a>
+      </p>
+    </div>
+
+    <script>
+      const ROUTE_KEYS = ["flood", "direct", "other"];
+      const PAYLOAD_KEYS = ["trace", "advert", "message", "other"];
+      const ROUTE_META = {
+        flood: { label: "Flood", color: "#ffbe6b" },
+        direct: { label: "Direct", color: "#4aa3ff" },
+        other: { label: "Other", color: "#7a8898" },
+      };
+      const PAYLOAD_META = {
+        trace: { label: "Trace", color: "#ffbe6b" },
+        advert: { label: "Advert", color: "#5de2c5" },
+        message: { label: "Message", color: "#4aa3ff" },
+        other: { label: "Other", color: "#7a8898" },
+      };
+
+      const state = {
+        broker: {},
+        traffic: {
+          window_seconds: 180,
+          history_seconds: 180,
+          bucket_seconds: 1,
+          unique_packets_total: 0,
+          packets_per_second: 0,
+          last_packet_at: 0,
+          route_counts: emptyCounts(ROUTE_KEYS),
+          route_rates: emptyCounts(ROUTE_KEYS),
+          payload_counts: emptyCounts(PAYLOAD_KEYS),
+          payload_rates: emptyCounts(PAYLOAD_KEYS),
+          top_talkers: [],
+          bursts: [],
+          history: [],
+        },
+      };
+
+      const elements = {
+        statusPill: document.getElementById("status-pill"),
+        statusText: document.getElementById("status-text"),
+        brokerChip: document.getElementById("broker-chip"),
+        brokerTransport: document.getElementById("broker-transport"),
+        ppsTotal: document.getElementById("pps-total"),
+        ppsWindow: document.getElementById("pps-window"),
+        packetsTotal: document.getElementById("packets-total"),
+        packetsLast: document.getElementById("packets-last"),
+        routeFlood: document.getElementById("route-flood"),
+        routeFloodMeta: document.getElementById("route-flood-meta"),
+        routeDirect: document.getElementById("route-direct"),
+        routeDirectMeta: document.getElementById("route-direct-meta"),
+        payloadTrace: document.getElementById("payload-trace"),
+        payloadTraceMeta: document.getElementById("payload-trace-meta"),
+        payloadAdvert: document.getElementById("payload-advert"),
+        payloadAdvertMeta: document.getElementById("payload-advert-meta"),
+        payloadMessage: document.getElementById("payload-message"),
+        payloadMessageMeta: document.getElementById("payload-message-meta"),
+        lastPacketClock: document.getElementById("last-packet-clock"),
+        lastPacketAge: document.getElementById("last-packet-age"),
+        routeLegend: document.getElementById("route-legend"),
+        payloadLegend: document.getElementById("payload-legend"),
+        routeChart: document.getElementById("route-chart"),
+        payloadChart: document.getElementById("payload-chart"),
+        routeTooltip: document.getElementById("route-tooltip"),
+        payloadTooltip: document.getElementById("payload-tooltip"),
+        routeWindowMeta: document.getElementById("route-window-meta"),
+        payloadWindowMeta: document.getElementById("payload-window-meta"),
+        routeLead: document.getElementById("route-lead"),
+        routeLeadDetail: document.getElementById("route-lead-detail"),
+        routePeak: document.getElementById("route-peak"),
+        routePeakDetail: document.getElementById("route-peak-detail"),
+        routeHistoryDetail: document.getElementById("route-history-detail"),
+        payloadLead: document.getElementById("payload-lead"),
+        payloadLeadDetail: document.getElementById("payload-lead-detail"),
+        payloadPeak: document.getElementById("payload-peak"),
+        payloadPeakDetail: document.getElementById("payload-peak-detail"),
+        payloadHistoryDetail: document.getElementById("payload-history-detail"),
+        talkersList: document.getElementById("talkers-list"),
+        burstsList: document.getElementById("bursts-list"),
+        themeToggle: document.getElementById("theme-toggle"),
+      };
+
+      const chartState = {
+        route: { points: [], bucketSeconds: 1, keys: ROUTE_KEYS, meta: ROUTE_META, countKey: "route_counts" },
+        payload: { points: [], bucketSeconds: 1, keys: PAYLOAD_KEYS, meta: PAYLOAD_META, countKey: "payload_counts" },
+      };
+
+      function emptyCounts(keys) {
+        return keys.reduce((acc, key) => {
+          acc[key] = 0;
+          return acc;
+        }, {});
+      }
+
+      function normalizeCounts(keys, source, fallback = 0) {
+        const counts = emptyCounts(keys);
+        const input = source || {};
+        keys.forEach((key) => {
+          const value = Number(input[key]);
+          counts[key] = Number.isFinite(value) ? value : fallback;
+        });
+        return counts;
+      }
+
+      function normalizeHistory(history, historySeconds) {
+        if (!Array.isArray(history)) return [];
+        return history
+          .map((bucket) => ({
+            ts: Number(bucket.ts) || 0,
+            bucket_seconds: Math.max(1, Number(bucket.bucket_seconds) || 1),
+            total: Number(bucket.total) || 0,
+            route_counts: normalizeCounts(ROUTE_KEYS, bucket.route_counts),
+            payload_counts: normalizeCounts(PAYLOAD_KEYS, bucket.payload_counts),
+          }))
+          .filter((bucket) => bucket.ts > 0)
+          .sort((a, b) => a.ts - b.ts)
+          .slice(-historySeconds);
+      }
+
+      function normalizeTraffic(traffic, currentHistory = []) {
+        const value = traffic || {};
+        const historySeconds = Math.max(60, Number(value.history_seconds) || 180);
+        const history = normalizeHistory(value.history, historySeconds);
+        const bucketSeconds = Math.max(
+          1,
+          Number(value.bucket_seconds) || (history[0] ? history[0].bucket_seconds : 1)
+        );
+        return {
+          window_seconds: Math.max(1, Number(value.window_seconds) || 60),
+          history_seconds: historySeconds,
+          bucket_seconds: bucketSeconds,
+          unique_packets_total: Number(value.unique_packets_total) || 0,
+          packets_per_second: Number(value.packets_per_second) || 0,
+          last_packet_at: Number(value.last_packet_at) || 0,
+          route_counts: normalizeCounts(ROUTE_KEYS, value.route_counts),
+          route_rates: normalizeCounts(ROUTE_KEYS, value.route_rates),
+          payload_counts: normalizeCounts(PAYLOAD_KEYS, value.payload_counts),
+          payload_rates: normalizeCounts(PAYLOAD_KEYS, value.payload_rates),
+          top_talkers: Array.isArray(value.top_talkers) ? value.top_talkers : [],
+          bursts: Array.isArray(value.bursts) ? value.bursts : [],
+          history: history.length ? history : normalizeHistory(currentHistory, historySeconds),
+        };
+      }
+
+      function formatRate(value) {
+        return `${Number(value || 0).toFixed(2)}/s`;
+      }
+
+      function formatNumber(value) {
+        return Number(value || 0).toLocaleString();
+      }
+
+      function formatClock(timestamp) {
+        if (!timestamp) return "--";
+        return new Date(timestamp * 1000).toLocaleTimeString();
+      }
+
+      function formatAge(timestamp) {
+        if (!timestamp) return "No packet yet";
+        const delta = Math.max(0, Math.floor(Date.now() / 1000 - timestamp));
+        if (delta < 60) return `${delta}s ago`;
+        if (delta < 3600) return `${Math.floor(delta / 60)}m ago`;
+        if (delta < 86400) return `${Math.floor(delta / 3600)}h ago`;
+        return `${Math.floor(delta / 86400)}d ago`;
+      }
+
+      function formatPercent(value, total) {
+        if (!total) return "0%";
+        return `${Math.round((value / total) * 100)}%`;
+      }
+
+      function rgba(hex, alpha) {
+        const value = String(hex || "").replace("#", "");
+        if (value.length !== 6) {
+          return `rgba(255, 255, 255, ${alpha})`;
+        }
+        const int = Number.parseInt(value, 16);
+        const red = (int >> 16) & 255;
+        const green = (int >> 8) & 255;
+        const blue = int & 255;
+        return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+      }
+
+      function formatTimeRange(ts, bucketSeconds) {
+        const start = new Date(ts * 1000);
+        const end = new Date((ts + Math.max(1, bucketSeconds) - 1) * 1000);
+        const sameDay = start.toDateString() === end.toDateString();
+        const startTime = start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        const endTime = end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        if (sameDay) {
+          return `${start.toLocaleDateString()} · ${startTime} - ${endTime}`;
+        }
+        return `${start.toLocaleString()} - ${end.toLocaleString()}`;
+      }
+
+      function formatDuration(seconds) {
+        const value = Math.max(1, Number(seconds) || 0);
+        if (value < 60) return `${value}s`;
+        if (value < 3600) return `${Math.round(value / 60)}m`;
+        if (value % 3600 === 0) return `${Math.round(value / 3600)}h`;
+        return `${(value / 3600).toFixed(1)}h`;
+      }
+
+      function compactTopic(topic) {
+        const value = String(topic || "").trim();
+        if (!value) return "";
+        const parts = value.split("/").filter(Boolean);
+        if (!parts.length) return value;
+        const last = parts[parts.length - 1];
+        if (last === "packets" && parts.length >= 2) {
+          return parts[parts.length - 2];
+        }
+        if (parts.length >= 2) {
+          return `${parts[parts.length - 2]}/${last}`;
+        }
+        return last;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function totalForKeys(keys, counts) {
+        return keys.reduce((sum, key) => sum + (Number(counts[key]) || 0), 0);
+      }
+
+      function getDominantKey(keys, counts) {
+        let leadKey = keys[0];
+        let leadValue = -1;
+        keys.forEach((key) => {
+          const value = Number(counts[key]) || 0;
+          if (value > leadValue) {
+            leadKey = key;
+            leadValue = value;
+          }
+        });
+        return {
+          key: leadKey,
+          value: Math.max(0, leadValue),
+          total: totalForKeys(keys, counts),
+        };
+      }
+
+      function getPeakBucket(history) {
+        return history.reduce((best, bucket) => {
+          if (!best || bucket.total > best.total) {
+            return bucket;
+          }
+          return best;
+        }, null);
+      }
+
+      function brokerLabel() {
+        const broker = state.broker || {};
+        return broker.display_host || (broker.host ? `${broker.host}:${broker.port}` : "--");
+      }
+
+      function applySnapshot(data) {
+        state.broker = data.broker || {};
+        state.traffic = normalizeTraffic(data.traffic);
+        renderAll();
+      }
+
+      function appendTrafficEvent(currentHistory, traffic, event) {
+        const historySeconds = traffic.history_seconds;
+        const bucketSeconds = Math.max(1, Number(traffic.bucket_seconds) || 1);
+        const eventTs = Math.floor(Number(event && event.ts) || 0);
+        if (!eventTs) return normalizeHistory(currentHistory, historySeconds);
+        const cutoff = eventTs - historySeconds + 1;
+        const bucketTs = Math.floor(eventTs / bucketSeconds) * bucketSeconds;
+        const next = normalizeHistory(currentHistory, historySeconds)
+          .filter((bucket) => (bucket.ts + bucketSeconds - 1) >= cutoff)
+          .map((bucket) => ({
+            ts: bucket.ts,
+            bucket_seconds: bucket.bucket_seconds || bucketSeconds,
+            total: bucket.total,
+            route_counts: normalizeCounts(ROUTE_KEYS, bucket.route_counts),
+            payload_counts: normalizeCounts(PAYLOAD_KEYS, bucket.payload_counts),
+          }));
+        let bucket = next.find((entry) => entry.ts === bucketTs);
+        if (!bucket) {
+          bucket = {
+            ts: bucketTs,
+            bucket_seconds: bucketSeconds,
+            total: 0,
+            route_counts: emptyCounts(ROUTE_KEYS),
+            payload_counts: emptyCounts(PAYLOAD_KEYS),
+          };
+          next.push(bucket);
+          next.sort((a, b) => a.ts - b.ts);
+        }
+        bucket.total += 1;
+        if (ROUTE_KEYS.includes(event.route)) {
+          bucket.route_counts[event.route] += 1;
+        } else {
+          bucket.route_counts.other += 1;
+        }
+        if (PAYLOAD_KEYS.includes(event.payload)) {
+          bucket.payload_counts[event.payload] += 1;
+        } else {
+          bucket.payload_counts.other += 1;
+        }
+        const maxBuckets = Math.max(1, Math.ceil(historySeconds / bucketSeconds));
+        return next
+          .filter((entry) => (entry.ts + bucketSeconds - 1) >= cutoff)
+          .slice(-maxBuckets);
+      }
+
+      function applyTrafficUpdate(message) {
+        const nextTraffic = normalizeTraffic(message.traffic, state.traffic.history);
+        nextTraffic.history = appendTrafficEvent(state.traffic.history, nextTraffic, message.event || null);
+        state.traffic = nextTraffic;
+        renderAll();
+      }
+
+      function applyBrokerUpdate(broker) {
+        state.broker = broker || {};
+        renderAll();
+      }
+
+      function renderBroker() {
+        const connected = Boolean(state.broker.connected);
+        elements.statusPill.classList.toggle("connected", connected);
+        elements.statusText.textContent = connected ? "Connected" : "Disconnected";
+        elements.brokerChip.textContent = brokerLabel();
+        const transport = state.broker.transport || "tcp";
+        const tls = state.broker.tls ? "TLS" : "Plain";
+        elements.brokerTransport.textContent = `${transport.toUpperCase()} · ${tls} · ${state.broker.topic || "--"}`;
+      }
+
+      function renderMetrics() {
+        const traffic = state.traffic;
+        elements.ppsTotal.textContent = formatRate(traffic.packets_per_second);
+        elements.ppsWindow.textContent = `${formatDuration(traffic.window_seconds)} retention window`;
+        elements.packetsTotal.textContent = formatNumber(traffic.unique_packets_total);
+        elements.packetsLast.textContent = traffic.last_packet_at ? `Last unique packet ${formatAge(traffic.last_packet_at)}` : "No packet yet";
+        elements.routeFlood.textContent = formatRate(traffic.route_rates.flood);
+        elements.routeFloodMeta.textContent = `${formatNumber(traffic.route_counts.flood)} packets in retention`;
+        elements.routeDirect.textContent = formatRate(traffic.route_rates.direct);
+        elements.routeDirectMeta.textContent = `${formatNumber(traffic.route_counts.direct)} packets in retention`;
+        elements.payloadTrace.textContent = formatRate(traffic.payload_rates.trace);
+        elements.payloadTraceMeta.textContent = `${formatNumber(traffic.payload_counts.trace)} packets in retention`;
+        elements.payloadAdvert.textContent = formatRate(traffic.payload_rates.advert);
+        elements.payloadAdvertMeta.textContent = `${formatNumber(traffic.payload_counts.advert)} packets in retention`;
+        elements.payloadMessage.textContent = formatRate(traffic.payload_rates.message);
+        elements.payloadMessageMeta.textContent = `${formatNumber(traffic.payload_counts.message)} packets in retention`;
+        elements.lastPacketClock.textContent = formatClock(traffic.last_packet_at);
+        elements.lastPacketAge.textContent = formatAge(traffic.last_packet_at);
+        const historyLabel = `${formatDuration(traffic.history_seconds)} window · ${formatDuration(traffic.bucket_seconds)} bins`;
+        elements.routeWindowMeta.textContent = historyLabel;
+        elements.payloadWindowMeta.textContent = historyLabel;
+      }
+
+      function renderLegend(container, keys, meta, counts, rates) {
+        const total = totalForKeys(keys, counts);
+        container.innerHTML = keys
+          .map((key) => `
+            <div class="legend-row">
+              <span class="swatch" style="background:${meta[key].color}"></span>
+              <div class="legend-main">
+                <div class="legend-topline">
+                  <span class="legend-name">${meta[key].label}</span>
+                  <span class="legend-meta">${formatNumber(counts[key])} packets</span>
+                </div>
+                <div class="legend-bar">
+                  <span style="width:${total ? ((Number(counts[key]) || 0) / total) * 100 : 0}%; background:${meta[key].color}"></span>
+                </div>
+              </div>
+              <div class="legend-side">
+                <span class="legend-rate">${formatRate(rates[key])}</span>
+                <span class="legend-share">${formatPercent(counts[key], total)}</span>
+              </div>
+            </div>
+          `)
+          .join("");
+      }
+
+      function renderInsights() {
+        const routeLead = getDominantKey(ROUTE_KEYS, state.traffic.route_counts);
+        const payloadLead = getDominantKey(PAYLOAD_KEYS, state.traffic.payload_counts);
+        const peakBucket = getPeakBucket(state.traffic.history);
+
+        if (routeLead.total) {
+          elements.routeLead.textContent = ROUTE_META[routeLead.key].label;
+          elements.routeLeadDetail.textContent = `${formatPercent(routeLead.value, routeLead.total)} of ${formatNumber(routeLead.total)} retained packets`;
+        } else {
+          elements.routeLead.textContent = "--";
+          elements.routeLeadDetail.textContent = "No data in retention";
+        }
+
+        if (payloadLead.total) {
+          elements.payloadLead.textContent = PAYLOAD_META[payloadLead.key].label;
+          elements.payloadLeadDetail.textContent = `${formatPercent(payloadLead.value, payloadLead.total)} of ${formatNumber(payloadLead.total)} retained packets`;
+        } else {
+          elements.payloadLead.textContent = "--";
+          elements.payloadLeadDetail.textContent = "No data in retention";
+        }
+
+        if (peakBucket) {
+          const peakRoute = getDominantKey(ROUTE_KEYS, peakBucket.route_counts || {});
+          const peakPayload = getDominantKey(PAYLOAD_KEYS, peakBucket.payload_counts || {});
+          elements.routePeak.textContent = `${formatNumber(peakBucket.total)} packets`;
+          elements.routePeakDetail.textContent = `${ROUTE_META[peakRoute.key].label} led ${formatTimeRange(peakBucket.ts, state.traffic.bucket_seconds)}`;
+          elements.payloadPeak.textContent = `${formatNumber(peakBucket.total)} packets`;
+          elements.payloadPeakDetail.textContent = `${PAYLOAD_META[peakPayload.key].label} led ${formatTimeRange(peakBucket.ts, state.traffic.bucket_seconds)}`;
+        } else {
+          elements.routePeak.textContent = "--";
+          elements.routePeakDetail.textContent = "No retained traffic yet";
+          elements.payloadPeak.textContent = "--";
+          elements.payloadPeakDetail.textContent = "No retained traffic yet";
+        }
+
+        if (state.traffic.history.length) {
+          const latest = state.traffic.history[state.traffic.history.length - 1];
+          elements.routeHistoryDetail.innerHTML = `<strong>${formatNumber(latest.total)}</strong> packets in the newest retained bin`;
+          elements.payloadHistoryDetail.innerHTML = `<strong>${formatNumber(latest.total)}</strong> packets in the newest retained bin`;
+        } else {
+          elements.routeHistoryDetail.textContent = "No retained traffic yet";
+          elements.payloadHistoryDetail.textContent = "No retained traffic yet";
+        }
+      }
+
+      function renderTalkers() {
+        const talkers = state.traffic.top_talkers || [];
+        if (!talkers.length) {
+          elements.talkersList.innerHTML = '<div class="empty-state">No retained talkers yet.</div>';
+          return;
+        }
+        elements.talkersList.innerHTML = talkers
+          .map((talker) => {
+            const shortTopic = compactTopic(talker.topic);
+            const label = talker.name || talker.node_id || shortTopic || "Unknown";
+            const detail = talker.name && talker.node_id ? talker.node_id : (shortTopic || "No topic");
+            return `
+              <div class="mini-row">
+                <div class="mini-top">
+                  <span class="mini-title">${escapeHtml(label)}</span>
+                  <span class="mini-value">${formatNumber(talker.packets)} packets</span>
+                </div>
+                <div class="mini-meta">${escapeHtml(detail)}</div>
+                <div class="mini-badges">
+                  <span class="badge">${escapeHtml(talker.route_lead || "other")}</span>
+                  <span class="badge">${escapeHtml(talker.payload_lead || "other")}</span>
+                  <span class="badge">${Number(talker.share || 0).toFixed(1)}%</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function renderBursts() {
+        const bursts = state.traffic.bursts || [];
+        if (!bursts.length) {
+          elements.burstsList.innerHTML = '<div class="empty-state">No retained bursts yet.</div>';
+          return;
+        }
+        elements.burstsList.innerHTML = bursts
+          .map((burst) => {
+            return `
+              <div class="mini-row">
+                <div class="mini-top">
+                  <span class="mini-title">${escapeHtml(formatTimeRange(burst.ts, burst.bucket_seconds))}</span>
+                  <span class="mini-value">${formatNumber(burst.total)} packets</span>
+                </div>
+                <div class="mini-badges">
+                  <span class="badge">${escapeHtml(burst.route_lead)} ${Number(burst.route_lead_share || 0).toFixed(0)}%</span>
+                  <span class="badge">${escapeHtml(burst.payload_lead)} ${Number(burst.payload_lead_share || 0).toFixed(0)}%</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function buildTooltipHtml(bucket, keys, meta, countKey, bucketSeconds) {
+        const counts = bucket[countKey] || {};
+        const total = Number(bucket.total) || 0;
+        const rows = keys
+          .map((key) => {
+            const value = Number(counts[key]) || 0;
+            return `
+              <div class="chart-tooltip-row">
+                <div class="chart-tooltip-key">
+                  <span class="chart-tooltip-swatch" style="background:${meta[key].color}"></span>
+                  <span>${meta[key].label}</span>
+                </div>
+                <div class="chart-tooltip-meta">${value} · ${formatPercent(value, total)}</div>
+              </div>
+            `;
+          })
+          .join("");
+        return `
+          <div class="chart-tooltip-title">${formatTimeRange(bucket.ts, bucketSeconds)}</div>
+          <div class="chart-tooltip-row">
+            <div class="chart-tooltip-key"><strong>Total</strong></div>
+            <div class="chart-tooltip-meta">${total} packets</div>
+          </div>
+          ${rows}
+        `;
+      }
+
+      function hideTooltip(tooltip) {
+        tooltip.classList.remove("visible");
+        tooltip.setAttribute("aria-hidden", "true");
+      }
+
+      function positionTooltip(tooltip, canvas, point) {
+        const rect = canvas.getBoundingClientRect();
+        const containerRect = canvas.parentElement.getBoundingClientRect();
+        const maxLeft = containerRect.width - tooltip.offsetWidth - 8;
+        const desiredLeft = point.x + 16;
+        const left = Math.max(8, Math.min(maxLeft, desiredLeft));
+        const desiredTop = point.y - tooltip.offsetHeight - 12;
+        const top = desiredTop < 8 ? point.y + 12 : desiredTop;
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      }
+
+      function showTooltip(tooltip, canvas, point, bucket, keys, meta, countKey, bucketSeconds) {
+        tooltip.innerHTML = buildTooltipHtml(bucket, keys, meta, countKey, bucketSeconds);
+        tooltip.classList.add("visible");
+        tooltip.setAttribute("aria-hidden", "false");
+        positionTooltip(tooltip, canvas, point);
+      }
+
+      function drawPercentChart(kind, canvas, tooltip, history, keys, meta, countKey, bucketSeconds) {
+        const ctx = canvas.getContext("2d");
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(320, Math.floor(rect.width));
+        const height = Math.max(220, Math.floor(rect.height));
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        const leftPad = 44;
+        const rightPad = 16;
+        const topPad = 16;
+        const bottomPad = 28;
+        const plotWidth = width - leftPad - rightPad;
+        const plotHeight = height - topPad - bottomPad;
+        const plotBottom = topPad + plotHeight;
+
+        const surface = ctx.createLinearGradient(0, topPad, 0, plotBottom);
+        surface.addColorStop(0, "rgba(255, 255, 255, 0.03)");
+        surface.addColorStop(1, "rgba(255, 255, 255, 0)");
+        ctx.fillStyle = surface;
+        ctx.fillRect(0, 0, width, height);
+
+        const maxPoints = Math.max(36, Math.floor(plotWidth / 7));
+        const stride = Math.max(1, Math.ceil(history.length / maxPoints));
+        const bars = history.filter((_, index) => index % stride === 0 || index === history.length - 1);
+        chartState[kind].points = [];
+        chartState[kind].bucketSeconds = bucketSeconds;
+        if (!bars.length) {
+          ctx.fillStyle = "rgba(154, 167, 182, 0.9)";
+          ctx.font = '500 14px "Space Grotesk"';
+          ctx.fillText("Waiting for packet telemetry", 18, height / 2);
+          hideTooltip(tooltip);
+          return;
+        }
+
+        ctx.font = '500 11px "IBM Plex Mono"';
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (let guide = 0; guide <= 4; guide += 1) {
+          const ratioY = guide / 4;
+          const y = Math.round(topPad + (plotHeight * ratioY)) + 0.5;
+          ctx.strokeStyle = guide === 4 ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.07)";
+          ctx.beginPath();
+          ctx.moveTo(leftPad, y);
+          ctx.lineTo(width - rightPad, y);
+          ctx.stroke();
+          const pct = `${100 - (ratioY * 100)}%`;
+          ctx.fillStyle = "rgba(154, 167, 182, 0.8)";
+          ctx.fillText(pct, leftPad - 8, y);
+        }
+
+        const step = bars.length > 1 ? plotWidth / (bars.length - 1) : 0;
+        const maxTotal = Math.max(...bars.map((bucket) => Number(bucket.total) || 0), 1);
+        const intensityHeight = Math.min(34, plotHeight * 0.18);
+        const points = bars.map((bucket, index) => {
+          const counts = bucket[countKey] || {};
+          return {
+            bucket,
+            counts,
+            total: totalForKeys(keys, counts),
+            x: bars.length === 1 ? leftPad + (plotWidth / 2) : leftPad + (index * step),
+          };
+        });
+
+        const intensityColor = kind === "route" ? ROUTE_META.flood.color : PAYLOAD_META.message.color;
+        const intensityAccent = kind === "route" ? ROUTE_META.direct.color : PAYLOAD_META.advert.color;
+        const intensityGradient = ctx.createLinearGradient(0, plotBottom - intensityHeight, 0, plotBottom);
+        intensityGradient.addColorStop(0, rgba(intensityColor, 0.34));
+        intensityGradient.addColorStop(1, rgba(intensityAccent, 0.02));
+        ctx.beginPath();
+        points.forEach((point, index) => {
+          const y = plotBottom - ((point.total / maxTotal) * intensityHeight);
+          if (index === 0) {
+            ctx.moveTo(point.x, y);
+          } else {
+            ctx.lineTo(point.x, y);
+          }
+        });
+        ctx.lineTo(points[points.length - 1].x, plotBottom);
+        ctx.lineTo(points[0].x, plotBottom);
+        ctx.closePath();
+        ctx.fillStyle = intensityGradient;
+        ctx.fill();
+
+        ctx.beginPath();
+        points.forEach((point, index) => {
+          const y = plotBottom - ((point.total / maxTotal) * intensityHeight);
+          if (index === 0) {
+            ctx.moveTo(point.x, y);
+          } else {
+            ctx.lineTo(point.x, y);
+          }
+        });
+        ctx.strokeStyle = rgba(intensityColor, 0.82);
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+
+        keys.forEach((key, keyIndex) => {
+          const fill = ctx.createLinearGradient(0, topPad, 0, plotBottom);
+          fill.addColorStop(0, rgba(meta[key].color, 0.34));
+          fill.addColorStop(1, rgba(meta[key].color, 0.04));
+
+          ctx.beginPath();
+          points.forEach((point, index) => {
+            const value = Number(point.counts[key]) || 0;
+            const share = point.total ? (value / point.total) : 0;
+            const y = plotBottom - (share * plotHeight);
+            if (index === 0) {
+              ctx.moveTo(point.x, y);
+            } else {
+              ctx.lineTo(point.x, y);
+            }
+          });
+          ctx.lineTo(points[points.length - 1].x, plotBottom);
+          ctx.lineTo(points[0].x, plotBottom);
+          ctx.closePath();
+          ctx.fillStyle = fill;
+          ctx.fill();
+
+          ctx.beginPath();
+          points.forEach((point, index) => {
+            const value = Number(point.counts[key]) || 0;
+            const share = point.total ? (value / point.total) : 0;
+            const y = plotBottom - (share * plotHeight);
+            if (index === 0) {
+              ctx.moveTo(point.x, y);
+            } else {
+              ctx.lineTo(point.x, y);
+            }
+          });
+          ctx.strokeStyle = rgba(meta[key].color, keyIndex === 0 ? 0.95 : 0.88);
+          ctx.lineWidth = keyIndex === 0 ? 2 : 1.6;
+          ctx.stroke();
+        });
+
+        let hoverPoint = null;
+        points.forEach((point, index) => {
+          const previousX = index > 0 ? points[index - 1].x : leftPad;
+          const nextX = index < points.length - 1 ? points[index + 1].x : width - rightPad;
+          chartState[kind].points.push({
+            x: point.x,
+            xStart: index === 0 ? leftPad : (previousX + point.x) / 2,
+            xEnd: index === points.length - 1 ? width - rightPad : (point.x + nextX) / 2,
+            bucket: point.bucket,
+          });
+        });
+
+        const activeBucket = chartState[kind].activeBucket || (points[points.length - 1] && points[points.length - 1].bucket);
+        if (activeBucket) {
+          const point = chartState[kind].points.find((entry) => entry.bucket.ts === activeBucket.ts);
+          const source = points.find((entry) => entry.bucket.ts === activeBucket.ts);
+          if (point && source) {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(point.x, topPad);
+            ctx.lineTo(point.x, plotBottom);
+            ctx.stroke();
+            const dominant = getDominantKey(keys, source.counts);
+            const dominantShare = dominant.total ? dominant.value / dominant.total : 0;
+            const dominantY = plotBottom - (dominantShare * plotHeight);
+            ctx.beginPath();
+            ctx.arc(point.x, dominantY, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = meta[dominant.key].color;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+            ctx.stroke();
+            hoverPoint = point;
+          }
+        }
+
+        if (hoverPoint && chartState[kind].activeBucket) {
+          showTooltip(
+            tooltip,
+            canvas,
+            { x: hoverPoint.x, y: topPad + 20 },
+            hoverPoint.bucket,
+            keys,
+            meta,
+            countKey,
+            bucketSeconds
+          );
+        }
+      }
+
+      function bindChartHover(kind, canvas, tooltip, keys, meta, countKey) {
+        if (canvas.dataset.hoverBound === "true") {
+          return;
+        }
+        canvas.dataset.hoverBound = "true";
+        canvas.addEventListener("mousemove", (event) => {
+          const rect = canvas.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const stateEntry = chartState[kind];
+          const point = stateEntry.points.find((entry) => x >= entry.xStart && x <= entry.xEnd);
+          if (!point) {
+            stateEntry.activeBucket = null;
+            hideTooltip(tooltip);
+            renderCharts();
+            return;
+          }
+          stateEntry.activeBucket = point.bucket;
+          renderCharts();
+          showTooltip(
+            tooltip,
+            canvas,
+            { x: point.x, y: event.clientY - rect.top },
+            point.bucket,
+            keys,
+            meta,
+            countKey,
+            stateEntry.bucketSeconds
+          );
+        });
+        canvas.addEventListener("mouseleave", () => {
+          chartState[kind].activeBucket = null;
+          hideTooltip(tooltip);
+          renderCharts();
+        });
+      }
+
+      function renderCharts() {
+        drawPercentChart(
+          "route",
+          elements.routeChart,
+          elements.routeTooltip,
+          state.traffic.history,
+          ROUTE_KEYS,
+          ROUTE_META,
+          "route_counts",
+          state.traffic.bucket_seconds
+        );
+        drawPercentChart(
+          "payload",
+          elements.payloadChart,
+          elements.payloadTooltip,
+          state.traffic.history,
+          PAYLOAD_KEYS,
+          PAYLOAD_META,
+          "payload_counts",
+          state.traffic.bucket_seconds
+        );
+      }
+
+      function renderAll() {
+        renderBroker();
+        renderMetrics();
+        renderInsights();
+        renderLegend(elements.routeLegend, ROUTE_KEYS, ROUTE_META, state.traffic.route_counts, state.traffic.route_rates);
+        renderLegend(elements.payloadLegend, PAYLOAD_KEYS, PAYLOAD_META, state.traffic.payload_counts, state.traffic.payload_rates);
+        renderTalkers();
+        renderBursts();
+        renderCharts();
+      }
+
+      function initTheme() {
+        const storedTheme = localStorage.getItem("theme");
+        if (storedTheme === "light") {
+          document.documentElement.setAttribute("data-theme", "light");
+          elements.themeToggle.textContent = "Dark Mode";
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+          elements.themeToggle.textContent = "Light Mode";
+        }
+      }
+
+      function init() {
+        initTheme();
+        const scheme = location.protocol === "https:" ? "wss" : "ws";
+        const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+        ws.addEventListener("message", (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === "snapshot") {
+            applySnapshot(data);
+          } else if (data.type === "traffic_update") {
+            applyTrafficUpdate(data);
+          } else if (data.type === "broker_status") {
+            applyBrokerUpdate(data.broker);
+          }
+        });
+
+        window.addEventListener("resize", renderCharts);
+        bindChartHover("route", elements.routeChart, elements.routeTooltip, ROUTE_KEYS, ROUTE_META, "route_counts");
+        bindChartHover("payload", elements.payloadChart, elements.payloadTooltip, PAYLOAD_KEYS, PAYLOAD_META, "payload_counts");
+        elements.themeToggle.addEventListener("click", () => {
+          const isLight = document.documentElement.getAttribute("data-theme") === "light";
+          if (isLight) {
+            document.documentElement.removeAttribute("data-theme");
+            localStorage.setItem("theme", "dark");
+            elements.themeToggle.textContent = "Light Mode";
+          } else {
+            document.documentElement.setAttribute("data-theme", "light");
+            localStorage.setItem("theme", "light");
+            elements.themeToggle.textContent = "Dark Mode";
+          }
+          renderCharts();
+        });
+
+        setInterval(() => {
+          renderMetrics();
+        }, 5000);
+      }
+
+      init();
+    </script>
+  </body>
+</html>

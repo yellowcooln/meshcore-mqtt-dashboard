@@ -6,6 +6,11 @@ def test_public_index_is_accessible_without_token(client):
   assert response.status_code == 200
 
 
+def test_public_traffic_page_is_accessible_without_token(client):
+  response = client.get("/traffic")
+  assert response.status_code == 200
+
+
 def test_snapshot_requires_token_when_enabled(client):
   dashboard_app.DASH_API_TOKEN = "test-token"
   response = client.get("/snapshot")
@@ -21,6 +26,7 @@ def test_snapshot_accepts_configured_header_token(client):
   payload = response.json()
   assert "broker" in payload
   assert "stats" in payload
+  assert "traffic" in payload
 
 
 def test_stats_accepts_bearer_token(client):
