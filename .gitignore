@@ -6,6 +6,7 @@ __pycache__/
 .env
 .pytest_cache/
 .venv/
+backend/node_modules/
 backend/static/logo.png
 data/
 docker-compose.override.yaml

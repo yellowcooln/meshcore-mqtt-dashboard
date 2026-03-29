@@ -14,11 +14,12 @@ This project provides a live MQTT dashboard that tracks broker status, node pres
 ## Runtime Commands
 - `docker compose up -d --build` (run after any file changes).
 - `docker compose logs -f mqtt-dashboard` (watch MQTT + app logs).
-- Startup logs include the running app version (currently `v1.3.0`).
+- Startup logs include the running app version (currently `v1.3.1`).
 - `docker-compose.yaml` loads runtime vars from `.env` via `env_file`.
 - `curl -s http://localhost:8081/snapshot` (broker + node snapshot).
 - `curl -s http://localhost:8081/packets?limit=50` (recent packets).
 - `http://localhost:8081/traffic` (retention-backed traffic page).
+- `http://localhost:8081/batteryinfo` (optional decoded battery telemetry page).
 - If `DASH_API_TOKEN` is set, include `?token=<value>` (or send header `X-Dashboard-Token`) for `/snapshot`, `/stats`, and `/packets`.
 - `pip install -r requirements-dev.txt && pytest -q` (run automated test suite).
 
@@ -32,7 +33,7 @@ This project provides a live MQTT dashboard that tracks broker status, node pres
 
 ## Dashboard API Token
 - `DASH_API_TOKEN` protects `/snapshot`, `/stats`, and `/packets`.
-- `/`, `/traffic`, and `/ws` remain accessible so users can view the live dashboard without a token URL.
+- `/`, `/traffic`, `/batteryinfo`, and `/ws` remain accessible so users can view the live dashboard without a token URL.
 
 ## Share / Embed Metadata
 - `/` is server-rendered so metadata is visible to crawlers and chat previews.
@@ -58,6 +59,14 @@ This project provides a live MQTT dashboard that tracks broker status, node pres
 - Node names are cached from the packet DB on startup.
 - Traffic history is persisted in `traffic_events` and rebuilt from `packets` when needed.
 - Traffic charts use the full retention window, not the short stats window.
+
+## Battery Info Page
+- `/batteryinfo` is optional and hidden unless `BATTERYINFO_ENABLED=true`.
+- Battery telemetry is decoded from a configured channel using `BATTERYINFO_CHANNEL_KEY`.
+- The battery page can optionally show or hide the channel name with `BATTERYINFO_SHOW_CHANNEL_NAME`.
+- Battery history is persisted in `batteryinfo_events` and backfilled from retained packets when needed.
+- Battery history uses its own retention window via `BATTERYINFO_RETENTION_SECONDS` (default `48 hours`).
+- The decoder dependency is the official `@michaelhart/meshcore-decoder` package.
 
 ## Traffic Page
 - `/traffic` shows retained packet rate summaries, route mix, payload mix, top talkers, and burst bins.

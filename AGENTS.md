@@ -4,6 +4,7 @@
 - `backend/app.py` holds the FastAPI server, MQTT ingest, SQLite packet storage, and websocket broadcasting.
 - `backend/static/index.html` is the dashboard UI and client-side rendering.
 - `backend/static/traffic.html` is the retained traffic page UI and chart rendering.
+- `backend/static/batteryinfo.html` is the optional decoded battery telemetry page.
 - `backend/requirements.txt` defines Python dependencies.
 - `backend/Dockerfile` builds the service image.
 - `docker-compose.yaml` runs the service as `mqtt-dashboard`.
@@ -16,6 +17,7 @@
 - `curl -s http://localhost:8081/snapshot` checks broker + node state.
 - `curl -s http://localhost:8081/packets?limit=50` inspects recent packets.
 - `http://localhost:8081/traffic` shows retained traffic history and talkers.
+- `http://localhost:8081/batteryinfo` shows decoded battery telemetry when enabled.
 
 ## Coding Style & Naming Conventions
 - Python in `backend/app.py` uses **2-space indentation**; keep it consistent.
@@ -36,8 +38,10 @@
 - Optional favicon is configured with `DASH_LOGO_URL` (`.png/.jpg/.jpeg`).
 - Optional header external button is configured with `DASH_EXTERNAL_URL` and `DASH_EXTERNAL_LABEL`.
 - Packet retention is controlled by `PACKET_RETENTION_SECONDS` (clamped to 24h max).
+- Battery info is controlled by `BATTERYINFO_ENABLED`, channel env vars, and `BATTERYINFO_RETENTION_SECONDS` (default 48h).
 - Packet DB lives at `PACKET_DB_PATH` (default `/data/packets.db` in Docker).
 - Names are cached from the packet DB on startup.
 - Traffic history is persisted in SQLite and rebuilt from retained packets when needed.
+- Battery history is persisted in SQLite and rebuilt from retained packets when needed.
 - Retained `*/internal` messages do not count toward node presence.
 - Nodes are purged after `NODE_PURGE_SECONDS` of inactivity (default 600 seconds).

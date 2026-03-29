@@ -1,11 +1,13 @@
 import asyncio
 from html import escape as html_escape
+import hashlib
 import hmac
 import json
 import math
 import os
 import re
 import sqlite3
+import subprocess
 import threading
 import time
 from urllib.parse import urljoin, urlparse
@@ -13,7 +15,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Dict, Mapping, Optional, Set
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import paho.mqtt.client as mqtt
@@ -22,8 +24,10 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(ROOT_DIR, "static")
 INDEX_PATH = os.path.join(STATIC_DIR, "index.html")
 TRAFFIC_PATH = os.path.join(STATIC_DIR, "traffic.html")
+BATTERYINFO_PATH = os.path.join(STATIC_DIR, "batteryinfo.html")
+BATTERYINFO_DECODER_PATH = os.path.join(ROOT_DIR, "scripts", "batteryinfo-decoder.cjs")
 DATA_DIR = os.path.join(os.path.dirname(ROOT_DIR), "data")
-APP_VERSION = "v1.3.0"
+APP_VERSION = "v1.3.1"
 
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
@@ -66,8 +70,14 @@ STATS_WINDOW_SECONDS = int(os.getenv("STATS_WINDOW_SECONDS", "60"))
 DASH_TITLE = os.getenv("DASH_TITLE", "MQTT Observatory")
 DASH_DESCRIPTION = "Live node presence, roles, and broker telemetry."
 TRAFFIC_DESCRIPTION = "Live unique packet rates by route and packet type."
+BATTERYINFO_DESCRIPTION = "Decoded #batteryinfo chat telemetry across retained packet history."
+BATTERYINFO_ENABLED = os.getenv("BATTERYINFO_ENABLED", "false").lower() == "true"
+BATTERYINFO_CHANNEL_NAME = os.getenv("BATTERYINFO_CHANNEL_NAME", "batteryinfo").strip()
+BATTERYINFO_SHOW_CHANNEL_NAME = os.getenv("BATTERYINFO_SHOW_CHANNEL_NAME", "false").lower() == "true"
+BATTERYINFO_RETENTION_SECONDS = max(0, int(os.getenv("BATTERYINFO_RETENTION_SECONDS", "172800")))
 DASH_LOGO_URL = os.getenv("DASH_LOGO_URL", "").strip()
 DASH_BROKER_HOST = os.getenv("DASH_BROKER_HOST", "").strip()
+BATTERYINFO_CHANNEL_KEY = os.getenv("BATTERYINFO_CHANNEL_KEY", "").strip().lower()
 DASH_EXTERNAL_URL_RAW = os.getenv("DASH_EXTERNAL_URL", "").strip()
 _external_url_parsed = urlparse(DASH_EXTERNAL_URL_RAW) if DASH_EXTERNAL_URL_RAW else None
 if (
@@ -243,6 +253,14 @@ IPV4_REDACTION_EXEMPT_KEYS = {
 }
 IPV4_PATTERN = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 MAC_PATTERN = re.compile(r"\b[0-9A-Fa-f]{2}(?::|-){5}[0-9A-Fa-f]{2}\b")
+BATTERYINFO_BATTERY_PATTERN = re.compile(
+  r"battery\s*=\s*(?P<volts>-?\d+(?:\.\d+)?)v\s+(?P<percent>\d{1,3})%",
+  re.IGNORECASE,
+)
+BATTERYINFO_TEMP_PATTERN = re.compile(r"temp\s*=\s*(?P<value>na|-?\d+(?:\.\d+)?)c", re.IGNORECASE)
+BATTERYINFO_HUM_PATTERN = re.compile(r"hum\s*=\s*(?P<value>na|-?\d+(?:\.\d+)?)%", re.IGNORECASE)
+BATTERYINFO_PRESS_PATTERN = re.compile(r"press\s*=\s*(?P<value>na|-?\d+(?:\.\d+)?)hpa", re.IGNORECASE)
+BATTERYINFO_ALT_PATTERN = re.compile(r"alt\s*=\s*(?P<value>na|-?\d+(?:\.\d+)?)m", re.IGNORECASE)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -386,7 +404,34 @@ def _resolve_favicon(public_url: str) -> Dict[str, str]:
   return {"url": candidate, "content_type": content_type}
 
 
-def _render_html(path: str, title_text: str, description_text: str, public_url: str) -> str:
+def _batteryinfo_channel_label() -> str:
+  raw_label = (BATTERYINFO_CHANNEL_NAME or "").strip()
+  if not raw_label:
+    raw_label = "batteryinfo"
+  return raw_label if raw_label.startswith("#") else f"#{raw_label}"
+
+
+def _format_retention_text(seconds: int, compact: bool = False) -> str:
+  seconds = max(0, int(seconds or 0))
+  if seconds % 3600 == 0 and seconds >= 3600:
+    hours = seconds // 3600
+    return f"{hours}h" if compact else f"{hours} hour{'s' if hours != 1 else ''}"
+  if seconds % 86400 == 0 and seconds >= 86400:
+    days = seconds // 86400
+    return f"{days}d" if compact else f"{days} day{'s' if days != 1 else ''}"
+  if seconds % 60 == 0 and seconds >= 60:
+    minutes = seconds // 60
+    return f"{minutes}m" if compact else f"{minutes} minute{'s' if minutes != 1 else ''}"
+  return f"{seconds}s" if compact else f"{seconds} seconds"
+
+
+def _render_html(
+  path: str,
+  title_text: str,
+  description_text: str,
+  public_url: str,
+  extra_replacements: Optional[Dict[str, str]] = None,
+) -> str:
   template = _load_html_template(path)
   title = html_escape(title_text, quote=True)
   description = html_escape(description_text, quote=True)
@@ -412,16 +457,81 @@ def _render_html(path: str, title_text: str, description_text: str, public_url: 
   rendered = rendered.replace("__DASH_URL__", url)
   rendered = rendered.replace("__DASH_FAVICON_TAGS__", favicon_tags)
   rendered = rendered.replace("__DASH_EXTERNAL_LINK__", external_link)
+  for key, value in (extra_replacements or {}).items():
+    rendered = rendered.replace(key, value)
   return rendered
 
 
 def _render_index_html(public_url: str) -> str:
-  return _render_html(INDEX_PATH, DASH_TITLE, DASH_DESCRIPTION, public_url)
+  battery_link = ""
+  if BATTERYINFO_ENABLED:
+    battery_link = '<a class="github-link" href="/batteryinfo">Battery</a>'
+  return _render_html(
+    INDEX_PATH,
+    DASH_TITLE,
+    DASH_DESCRIPTION,
+    public_url,
+    {"__BATTERY_INDEX_LINK__": battery_link},
+  )
 
 
 def _render_traffic_html(public_url: str) -> str:
   traffic_title = f"{DASH_TITLE} Traffic"
-  return _render_html(TRAFFIC_PATH, traffic_title, TRAFFIC_DESCRIPTION, public_url)
+  battery_link = ""
+  if BATTERYINFO_ENABLED:
+    battery_link = '<a class="nav-link" href="/batteryinfo">Battery</a>'
+  return _render_html(
+    TRAFFIC_PATH,
+    traffic_title,
+    TRAFFIC_DESCRIPTION,
+    public_url,
+    {"__BATTERY_NAV_LINK__": battery_link},
+  )
+
+
+def _render_batteryinfo_html(public_url: str) -> str:
+  batteryinfo_title = f"{DASH_TITLE} Battery Info"
+  channel_label = html_escape(_batteryinfo_channel_label(), quote=False)
+  retention_long = _format_retention_text(BATTERYINFO_RETENTION_SECONDS, compact=False)
+  retention_short = _format_retention_text(BATTERYINFO_RETENTION_SECONDS, compact=True)
+  if BATTERYINFO_SHOW_CHANNEL_NAME:
+    subtitle = (
+      "Decoded battery telemetry from the retained "
+      f'<span class="mono">{channel_label}</span> channel over the last {retention_long}.'
+    )
+    latest_nodes_sub = (
+      "Most recent decoded value set for each sender posting into "
+      f'<span class="mono">{channel_label}</span>.'
+    )
+  else:
+    subtitle = f"Decoded battery telemetry from the retained battery channel over the last {retention_long}."
+    latest_nodes_sub = "Most recent decoded value set for each sender posting into the battery channel."
+  return _render_html(
+    BATTERYINFO_PATH,
+    batteryinfo_title,
+    BATTERYINFO_DESCRIPTION,
+    public_url,
+    {
+      "__BATTERY_ACTIVE_LINK__": '<a class="nav-link" href="/batteryinfo" data-active="true">Battery</a>',
+      "__BATTERYINFO_SUBTITLE__": subtitle,
+      "__BATTERYINFO_LATEST_NODES_SUB__": latest_nodes_sub,
+      "__BATTERYINFO_RETENTION_SHORT__": html_escape(retention_short, quote=True),
+      "__BATTERYINFO_FOOTER_RETENTION__": html_escape(retention_long, quote=True),
+    },
+  )
+
+
+def _parse_channel_secret(raw_value: str) -> Optional[str]:
+  cleaned = (raw_value or "").strip().lower()
+  if not cleaned:
+    return None
+  if len(cleaned) != 32:
+    return None
+  try:
+    bytes.fromhex(cleaned)
+  except ValueError:
+    return None
+  return cleaned
 
 
 def _normalize_key(value: str) -> str:
@@ -976,8 +1086,10 @@ def _persist_traffic_event(packet_event: Dict[str, Any]) -> None:
     )
     if now - last_packet_purge >= 60:
       cutoff = now - PACKET_RETENTION_SECONDS
+      battery_cutoff = now - BATTERYINFO_RETENTION_SECONDS
       packet_db.execute("DELETE FROM packets WHERE ts < ?", (cutoff,))
       packet_db.execute("DELETE FROM traffic_events WHERE ts < ?", (cutoff,))
+      packet_db.execute("DELETE FROM batteryinfo_events WHERE ts < ?", (battery_cutoff,))
       last_packet_purge = now
     packet_db.commit()
 
@@ -1287,6 +1399,442 @@ def _build_traffic(now: float, include_history: bool = True) -> Dict[str, Any]:
   return traffic
 
 
+def _decode_group_text_payloads(
+  raw_hex_values: list[str],
+  channel_key: str,
+) -> tuple[Dict[str, Dict[str, Any]], str]:
+  normalized = []
+  seen = set()
+  for raw_hex in raw_hex_values:
+    candidate = str(raw_hex or "").strip().upper()
+    if not candidate or candidate in seen:
+      continue
+    seen.add(candidate)
+    normalized.append(candidate)
+  if not normalized:
+    return {}, ""
+
+  decoded_by_raw: Dict[str, Dict[str, Any]] = {}
+  chunk_size = 500
+  for index in range(0, len(normalized), chunk_size):
+    chunk = normalized[index:index + chunk_size]
+    try:
+      completed = subprocess.run(
+        ["node", BATTERYINFO_DECODER_PATH],
+        input=json.dumps({
+          "channelKey": channel_key,
+          "rawHexes": chunk,
+        }),
+        text=True,
+        capture_output=True,
+        check=True,
+        cwd=ROOT_DIR,
+        timeout=20,
+      )
+    except FileNotFoundError:
+      print("[mqtt-dashboard] batteryinfo decoder unavailable: node missing")
+      return {}, "decoder_unavailable"
+    except subprocess.TimeoutExpired:
+      print("[mqtt-dashboard] batteryinfo decoder timed out")
+      return {}, "decoder_failed"
+    except subprocess.CalledProcessError as exc:
+      stderr = (exc.stderr or "").strip()
+      if stderr:
+        print(f"[mqtt-dashboard] batteryinfo decoder failed: {stderr}")
+      else:
+        print("[mqtt-dashboard] batteryinfo decoder failed")
+      return {}, "decoder_failed"
+
+    try:
+      payload = json.loads(completed.stdout or "{}")
+    except json.JSONDecodeError:
+      print("[mqtt-dashboard] batteryinfo decoder returned invalid JSON")
+      return {}, "decoder_failed"
+
+    results = payload.get("results")
+    if not isinstance(results, dict):
+      print("[mqtt-dashboard] batteryinfo decoder returned invalid payload")
+      return {}, "decoder_failed"
+
+    for raw_hex, decoded in results.items():
+      normalized_raw = str(raw_hex or "").strip().upper()
+      if not normalized_raw or not isinstance(decoded, dict):
+        continue
+      text = str(decoded.get("text") or "").strip()
+      if not text:
+        continue
+      decoded_by_raw[normalized_raw] = {
+        "sender_timestamp": int(decoded.get("sender_timestamp") or 0),
+        "flags": int(decoded.get("flags") or 0),
+        "text": text,
+      }
+
+  return decoded_by_raw, ""
+
+
+def _parse_optional_metric(match: Optional[re.Match]) -> Optional[float]:
+  if not match:
+    return None
+  raw_value = str(match.group("value") or "").strip().lower()
+  if raw_value == "na":
+    return None
+  try:
+    return float(raw_value)
+  except ValueError:
+    return None
+
+
+def _parse_batteryinfo_message(text: str) -> Optional[Dict[str, Any]]:
+  text = (text or "").strip()
+  if not text:
+    return None
+  prefix = ""
+  body = text
+  if ":" in text:
+    prefix, body = text.split(":", 1)
+    prefix = prefix.strip()
+    body = body.strip()
+  battery_match = BATTERYINFO_BATTERY_PATTERN.search(body)
+  if not battery_match:
+    return None
+  return {
+    "sender_name": prefix or None,
+    "message_body": body,
+    "battery_v": float(battery_match.group("volts")),
+    "battery_percent": int(battery_match.group("percent")),
+    "temp_c": _parse_optional_metric(BATTERYINFO_TEMP_PATTERN.search(body)),
+    "humidity_percent": _parse_optional_metric(BATTERYINFO_HUM_PATTERN.search(body)),
+    "pressure_hpa": _parse_optional_metric(BATTERYINFO_PRESS_PATTERN.search(body)),
+    "altitude_m": _parse_optional_metric(BATTERYINFO_ALT_PATTERN.search(body)),
+  }
+
+
+def _batteryinfo_key_fingerprint(channel_key: str) -> str:
+  return hashlib.sha256(channel_key.encode("ascii", "ignore")).hexdigest()
+
+
+def _decode_batteryinfo_entries(
+  rows: list[tuple[Any, Any, Any, Any, Any]],
+  channel_key: str,
+) -> tuple[list[Dict[str, Any]], str]:
+  raw_hex_values = []
+  for _, _, _, _, payload_json_text in rows:
+    if not payload_json_text:
+      continue
+    try:
+      payload_json = json.loads(payload_json_text)
+    except json.JSONDecodeError:
+      continue
+    if not isinstance(payload_json, dict):
+      continue
+    if str(payload_json.get("packet_type") or "").strip() != "5":
+      continue
+    raw_hex = str(payload_json.get("raw") or "").strip().upper()
+    if raw_hex:
+      raw_hex_values.append(raw_hex)
+
+  decoded_packets, decoder_error = _decode_group_text_payloads(raw_hex_values, channel_key)
+  if raw_hex_values and decoder_error:
+    return [], decoder_error
+
+  entries = []
+  seen: Set[str] = set()
+  for ts, topic, node_id, packet_name, payload_json_text in rows:
+    if not payload_json_text:
+      continue
+    try:
+      payload_json = json.loads(payload_json_text)
+    except json.JSONDecodeError:
+      continue
+    if not isinstance(payload_json, dict):
+      continue
+    if str(payload_json.get("packet_type") or "").strip() != "5":
+      continue
+    raw_hex = str(payload_json.get("raw") or "").strip().upper()
+    decoded = decoded_packets.get(raw_hex)
+    if not decoded:
+      continue
+    parsed = _parse_batteryinfo_message(decoded["text"])
+    if not parsed:
+      continue
+    dedupe_key = f"{decoded['sender_timestamp']}|{parsed['message_body']}"
+    if dedupe_key in seen:
+      continue
+    seen.add(dedupe_key)
+    sender_name = parsed["sender_name"] or packet_name or node_id or "Unknown"
+    entries.append(
+      {
+        "ts": float(ts),
+        "dedupe_key": dedupe_key,
+        "sender_timestamp": int(decoded["sender_timestamp"]),
+        "node_id": node_id,
+        "packet_name": packet_name,
+        "sender_name": sender_name,
+        "topic": topic,
+        "text": decoded["text"],
+        "message_body": parsed["message_body"],
+        "battery_v": parsed["battery_v"],
+        "battery_percent": parsed["battery_percent"],
+        "temp_c": parsed["temp_c"],
+        "humidity_percent": parsed["humidity_percent"],
+        "pressure_hpa": parsed["pressure_hpa"],
+        "altitude_m": parsed["altitude_m"],
+      }
+    )
+  return entries, ""
+
+
+def _persist_batteryinfo_entries(entries: list[Dict[str, Any]], key_fingerprint: str) -> None:
+  if packet_db is None or not entries:
+    return
+  with packet_db_lock:
+    packet_db.executemany(
+      """
+      INSERT OR IGNORE INTO batteryinfo_events (
+        ts, dedupe_key, sender_timestamp, node_id, packet_name, sender_name,
+        topic, text, message_body, battery_v, battery_percent, temp_c,
+        humidity_percent, pressure_hpa, altitude_m, key_fingerprint
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      """,
+      [
+        (
+          entry["ts"],
+          entry["dedupe_key"],
+          entry["sender_timestamp"],
+          entry.get("node_id"),
+          entry.get("packet_name"),
+          entry["sender_name"],
+          entry["topic"],
+          entry["text"],
+          entry["message_body"],
+          entry["battery_v"],
+          entry["battery_percent"],
+          entry.get("temp_c"),
+          entry.get("humidity_percent"),
+          entry.get("pressure_hpa"),
+          entry.get("altitude_m"),
+          key_fingerprint,
+        )
+        for entry in entries
+      ],
+    )
+    packet_db.commit()
+
+
+def _backfill_batteryinfo_events_from_packets(channel_key: str) -> str:
+  if packet_db is None:
+    return ""
+  cutoff = time.time() - max(0, BATTERYINFO_RETENTION_SECONDS)
+  with packet_db_lock:
+    rows = packet_db.execute(
+      """
+      SELECT ts, topic, node_id, name, payload_json
+      FROM packets
+      WHERE ts >= ?
+        AND topic LIKE '%/packets'
+        AND payload_json IS NOT NULL
+        AND payload_json != ''
+        AND payload_json LIKE '%"packet_type":"5"%'
+      ORDER BY ts ASC
+      """,
+      (cutoff,),
+    ).fetchall()
+  if not rows:
+    return ""
+  entries, decoder_error = _decode_batteryinfo_entries(rows, channel_key)
+  if decoder_error:
+    return decoder_error
+  _persist_batteryinfo_entries(entries, _batteryinfo_key_fingerprint(channel_key))
+  return ""
+
+
+def _load_batteryinfo_events() -> None:
+  if packet_db is None:
+    return
+  if not BATTERYINFO_ENABLED:
+    return
+  channel_key = _parse_channel_secret(BATTERYINFO_CHANNEL_KEY)
+  if channel_key is None:
+    return
+  fingerprint = _batteryinfo_key_fingerprint(channel_key)
+  with packet_db_lock:
+    total_count = packet_db.execute(
+      "SELECT COUNT(*) FROM batteryinfo_events"
+    ).fetchone()[0]
+    matching_count = packet_db.execute(
+      "SELECT COUNT(*) FROM batteryinfo_events WHERE key_fingerprint = ?",
+      (fingerprint,),
+    ).fetchone()[0]
+  if total_count == 0:
+    error = _backfill_batteryinfo_events_from_packets(channel_key)
+    if error:
+      print(f"[mqtt-dashboard] batteryinfo backfill failed: {error}")
+    return
+  if matching_count == total_count:
+    return
+  with packet_db_lock:
+    packet_db.execute("DELETE FROM batteryinfo_events")
+    packet_db.commit()
+  error = _backfill_batteryinfo_events_from_packets(channel_key)
+  if error:
+    print(f"[mqtt-dashboard] batteryinfo rebuild failed: {error}")
+
+
+def _record_batteryinfo_event(
+  topic: str,
+  payload_info: Dict[str, Any],
+  node: NodeState,
+  ts: float,
+) -> None:
+  if packet_db is None:
+    return
+  if not BATTERYINFO_ENABLED:
+    return
+  channel_key = _parse_channel_secret(BATTERYINFO_CHANNEL_KEY)
+  if channel_key is None:
+    return
+  payload_json = payload_info.get("json")
+  if not isinstance(payload_json, dict):
+    return
+  if str(payload_json.get("packet_type") or "").strip() != "5":
+    return
+  payload_json_text = json.dumps(payload_json, ensure_ascii=True)
+  entries, decoder_error = _decode_batteryinfo_entries(
+    [(ts, topic, node.node_id, node.name, payload_json_text)],
+    channel_key,
+  )
+  if decoder_error:
+    print(f"[mqtt-dashboard] batteryinfo live decode failed: {decoder_error}")
+    return
+  _persist_batteryinfo_entries(entries, _batteryinfo_key_fingerprint(channel_key))
+
+
+def _fetch_batteryinfo(now: Optional[float] = None) -> Dict[str, Any]:
+  if packet_db is None:
+    return {
+      "enabled": False,
+      "reason": "packet_db_disabled",
+      "retention_seconds": BATTERYINFO_RETENTION_SECONDS,
+      "entries": [],
+      "nodes": [],
+      "metrics": [],
+      "stats": {"reports": 0, "nodes": 0, "latest_report_at": 0.0},
+    }
+  secret = _parse_channel_secret(BATTERYINFO_CHANNEL_KEY)
+  if secret is None:
+    return {
+      "enabled": False,
+      "reason": "missing_channel_key",
+      "retention_seconds": BATTERYINFO_RETENTION_SECONDS,
+      "entries": [],
+      "nodes": [],
+      "metrics": [],
+      "stats": {"reports": 0, "nodes": 0, "latest_report_at": 0.0},
+    }
+
+  now = float(now or time.time())
+  cutoff = now - max(0, BATTERYINFO_RETENTION_SECONDS)
+  with packet_db_lock:
+    rows = packet_db.execute(
+      """
+      SELECT
+        ts,
+        sender_timestamp,
+        node_id,
+        packet_name,
+        sender_name,
+        topic,
+        text,
+        message_body,
+        battery_v,
+        battery_percent,
+        temp_c,
+        humidity_percent,
+        pressure_hpa,
+        altitude_m
+      FROM batteryinfo_events
+      WHERE ts >= ?
+      ORDER BY ts ASC
+      """,
+      (cutoff,),
+    ).fetchall()
+
+  entries = []
+  metrics_present = set()
+  latest_by_node: Dict[str, Dict[str, Any]] = {}
+  for (
+    ts,
+    sender_timestamp,
+    node_id,
+    packet_name,
+    sender_name,
+    topic,
+    text,
+    message_body,
+    battery_v,
+    battery_percent,
+    temp_c,
+    humidity_percent,
+    pressure_hpa,
+    altitude_m,
+  ) in rows:
+    entry = {
+      "ts": float(ts),
+      "sender_timestamp": int(sender_timestamp or 0),
+      "node_id": node_id,
+      "packet_name": packet_name,
+      "sender_name": sender_name or packet_name or node_id or "Unknown",
+      "topic": topic,
+      "text": text,
+      "message_body": message_body,
+      "battery_v": float(battery_v),
+      "battery_percent": int(battery_percent),
+      "temp_c": temp_c,
+      "humidity_percent": humidity_percent,
+      "pressure_hpa": pressure_hpa,
+      "altitude_m": altitude_m,
+    }
+    entries.append(entry)
+    for metric_key in (
+      "battery_v",
+      "battery_percent",
+      "temp_c",
+      "humidity_percent",
+      "pressure_hpa",
+      "altitude_m",
+    ):
+      if entry.get(metric_key) is not None:
+        metrics_present.add(metric_key)
+    if sender_name not in latest_by_node or entry["ts"] >= latest_by_node[sender_name]["ts"]:
+      latest_by_node[sender_name] = entry
+
+  entries.sort(key=lambda item: item["ts"])
+  nodes = sorted(
+    latest_by_node.values(),
+    key=lambda item: (-item["ts"], item["sender_name"].lower()),
+  )
+
+  latest_report = nodes[0] if nodes else None
+  stats = {
+    "reports": len(entries),
+    "nodes": len(nodes),
+    "latest_report_at": latest_report["ts"] if latest_report else 0.0,
+    "latest_battery_v": latest_report["battery_v"] if latest_report else None,
+    "latest_battery_percent": latest_report["battery_percent"] if latest_report else None,
+  }
+
+  return {
+    "enabled": True,
+    "reason": "",
+    "retention_seconds": BATTERYINFO_RETENTION_SECONDS,
+    "entries": entries,
+    "nodes": nodes,
+    "metrics": sorted(metrics_present),
+    "stats": stats,
+  }
+
+
 def _build_stats(now: float) -> Dict[str, Any]:
   with state_lock:
     online_count = sum(
@@ -1379,6 +1927,35 @@ def _init_packet_db() -> None:
   packet_db.execute(
     "CREATE INDEX IF NOT EXISTS idx_traffic_events_dedupe_ts ON traffic_events (dedupe_key, ts)"
   )
+  packet_db.execute(
+    """
+    CREATE TABLE IF NOT EXISTS batteryinfo_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ts REAL NOT NULL,
+      dedupe_key TEXT NOT NULL,
+      sender_timestamp INTEGER NOT NULL,
+      node_id TEXT,
+      packet_name TEXT,
+      sender_name TEXT NOT NULL,
+      topic TEXT NOT NULL,
+      text TEXT NOT NULL,
+      message_body TEXT NOT NULL,
+      battery_v REAL NOT NULL,
+      battery_percent INTEGER NOT NULL,
+      temp_c REAL,
+      humidity_percent REAL,
+      pressure_hpa REAL,
+      altitude_m REAL,
+      key_fingerprint TEXT NOT NULL
+    )
+    """
+  )
+  packet_db.execute(
+    "CREATE INDEX IF NOT EXISTS idx_batteryinfo_events_ts ON batteryinfo_events (ts)"
+  )
+  packet_db.execute(
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_batteryinfo_events_dedupe ON batteryinfo_events (dedupe_key)"
+  )
   packet_db.commit()
 
 
@@ -1441,6 +2018,7 @@ def _save_packet(topic: str, payload_info: Dict[str, Any], node: NodeState) -> N
       cutoff = now - PACKET_RETENTION_SECONDS
       packet_db.execute("DELETE FROM packets WHERE ts < ?", (cutoff,))
       packet_db.execute("DELETE FROM traffic_events WHERE ts < ?", (cutoff,))
+      packet_db.execute("DELETE FROM batteryinfo_events WHERE ts < ?", (cutoff,))
       last_packet_purge = now
     packet_db.commit()
 
@@ -1603,6 +2181,7 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
   now = time.time()
   _save_packet(topic, payload_info, node)
   unique_packet_event = _record_traffic_event(packet_event)
+  _record_batteryinfo_event(topic, payload_info, node, now)
   traffic_summary = None
   if unique_packet_event:
     traffic_summary = _build_traffic(now, include_history=False)
@@ -1708,6 +2287,7 @@ async def on_startup():
   _init_packet_db()
   _load_name_cache()
   _load_traffic_events()
+  _load_batteryinfo_events()
   start_mqtt()
 
 
@@ -1734,6 +2314,20 @@ async def index(request: Request) -> HTMLResponse:
 @app.get("/traffic")
 async def traffic(request: Request) -> HTMLResponse:
   return HTMLResponse(_render_traffic_html(str(request.url)))
+
+
+@app.get("/batteryinfo")
+async def batteryinfo(request: Request) -> HTMLResponse:
+  if not BATTERYINFO_ENABLED:
+    raise HTTPException(status_code=404, detail="Not Found")
+  return HTMLResponse(_render_batteryinfo_html(str(request.url)))
+
+
+@app.get("/batteryinfo/data")
+async def batteryinfo_data() -> JSONResponse:
+  if not BATTERYINFO_ENABLED:
+    raise HTTPException(status_code=404, detail="Not Found")
+  return JSONResponse(_fetch_batteryinfo())
 
 
 @app.get("/snapshot")
