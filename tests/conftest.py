@@ -31,6 +31,10 @@ def client(monkeypatch):
   dashboard_app.DASH_DESCRIPTION = "Live node presence, roles, and broker telemetry."
   dashboard_app.DASH_BROKER_HOST = ""
   dashboard_app.DASH_LOGO_URL = ""
+  dashboard_app.BATTERYINFO_ENABLED = False
+  dashboard_app.BATTERYINFO_CHANNEL_NAME = "batteryinfo"
+  dashboard_app.BATTERYINFO_SHOW_CHANNEL_NAME = False
+  dashboard_app.BATTERYINFO_CHANNEL_KEY = ""
   dashboard_app.nodes = {}
   dashboard_app.sys_topics = {}
   dashboard_app.message_times = deque()

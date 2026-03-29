@@ -34,6 +34,7 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
   - `http://localhost:8081/stats`
   - `http://localhost:8081/packets?limit=50`
   - `http://localhost:8081/traffic`
+  - `http://localhost:8081/batteryinfo` when `BATTERYINFO_ENABLED=true`
   - `docker compose logs --tail=20 mqtt-dashboard` should show the running app version at startup
 - Validate share/embed metadata with:
   - `curl -s http://localhost:8081 | rg -n "og:title|og:description|twitter:title|twitter:description"`
@@ -47,6 +48,9 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8081
 - Validate retained traffic behavior:
   - `/traffic` should render after restart using retained DB-backed history.
   - Top talkers and burst bins should reflect retained `*/packets` traffic.
+- Validate battery page behavior when enabled:
+  - `/batteryinfo` should render from persisted `batteryinfo_events` without scanning the full `packets` table on every load.
+  - With `BATTERYINFO_ENABLED=false`, confirm `/batteryinfo` returns `404` and the Battery nav link is hidden.
 - Validate node presence behavior:
   - Retained `*/internal` startup replay should not create anonymous online nodes.
 - If `DASH_API_TOKEN` is enabled locally, include `?token=<value>` or send header `X-Dashboard-Token` for `/snapshot`, `/stats`, and `/packets`.

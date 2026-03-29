@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__DASH_TITLE__</title>
+    <meta name="description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="__DASH_TITLE__" />
+    <meta property="og:description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:url" content="__DASH_URL__" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="__DASH_TITLE__" />
+    <meta name="twitter:description" content="__DASH_DESCRIPTION__" />
+    __DASH_FAVICON_TAGS__
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #e7edf5;
+        --muted: #9aa7b6;
+        --panel: #0f1823;
+        --panel-strong: #172333;
+        --accent: #4aa3ff;
+        --accent-2: #5de2c5;
+        --accent-3: #ffbe6b;
+        --warn: #ff7b66;
+        --grid: rgba(255, 255, 255, 0.08);
+        --shadow: 0 26px 64px rgba(0, 0, 0, 0.38);
+        --bg-gradient:
+          radial-gradient(circle at 18% 15%, rgba(74, 163, 255, 0.22), transparent 60%),
+          radial-gradient(circle at 80% 10%, rgba(93, 226, 197, 0.18), transparent 55%),
+          radial-gradient(circle at 85% 80%, rgba(255, 190, 107, 0.12), transparent 50%),
+          linear-gradient(160deg, #0a1119 0%, #0f1a27 50%, #0b1320 100%);
+      }
+
+      [data-theme="light"] {
+        --ink: #1b2430;
+        --muted: #5a6a7a;
+        --panel: #f4f6fb;
+        --panel-strong: #e9eef6;
+        --accent: #1f6fe0;
+        --accent-2: #158a6a;
+        --accent-3: #f0b24a;
+        --warn: #d4584f;
+        --grid: rgba(24, 40, 64, 0.12);
+        --shadow: 0 18px 50px rgba(17, 34, 56, 0.12);
+        --bg-gradient:
+          radial-gradient(circle at 18% 15%, rgba(31, 111, 224, 0.18), transparent 60%),
+          radial-gradient(circle at 82% 12%, rgba(21, 138, 106, 0.1), transparent 50%),
+          radial-gradient(circle at 88% 75%, rgba(240, 178, 74, 0.12), transparent 50%),
+          linear-gradient(160deg, #f5f7fb 0%, #eef2f7 52%, #f8fafd 100%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+      }
+
+      html {
+        background: var(--bg-gradient);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+        color: var(--ink);
+        overflow-x: hidden;
+        background: transparent;
+      }
+
+      .app {
+        position: relative;
+        padding: 36px 40px 48px;
+        width: 100%;
+        max-width: 1320px;
+        margin: 0 auto;
+        animation: fade-in 600ms ease-out;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      .header-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .title-block h1 {
+        margin: 0;
+        font-size: 2.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .title-block p {
+        margin: 6px 0 0;
+        font-size: 0.95rem;
+        color: var(--muted);
+        max-width: 64ch;
+      }
+
+      .status-pill,
+      .theme-toggle,
+      .nav-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: var(--panel);
+        color: var(--ink);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-decoration: none;
+        box-shadow: var(--shadow);
+      }
+
+      .theme-toggle {
+        cursor: pointer;
+      }
+
+      .nav-link:hover,
+      .theme-toggle:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .nav-link[data-active="true"] {
+        border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+        color: var(--accent);
+      }
+
+      .status-pill {
+        color: var(--muted);
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--warn);
+        box-shadow: 0 0 0 4px rgba(255, 141, 109, 0.2);
+      }
+
+      .status-pill.ready .status-dot {
+        background: var(--accent-2);
+        box-shadow: 0 0 0 4px rgba(109, 214, 168, 0.2);
+      }
+
+      [data-theme="light"] .status-pill,
+      [data-theme="light"] .theme-toggle,
+      [data-theme="light"] .nav-link {
+        border-color: rgba(24, 40, 64, 0.2);
+      }
+
+      .hero-grid,
+      .chart-grid,
+      .lower-grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .hero-grid {
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        margin-bottom: 24px;
+      }
+
+      .chart-grid {
+        grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.9fr);
+        margin-bottom: 24px;
+        align-items: start;
+      }
+
+      .lower-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-bottom: 24px;
+      }
+
+      .table-section {
+        margin-bottom: 24px;
+      }
+
+      .card,
+      .panel {
+        background: var(--panel);
+        border: 1px solid rgba(93, 75, 52, 0.08);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        min-width: 0;
+        width: 100%;
+        animation: rise 540ms ease-out;
+      }
+
+      .card {
+        padding: 18px 18px 16px;
+      }
+
+      .panel {
+        padding: 18px 18px 20px;
+      }
+
+      .card h3,
+      .panel h2 {
+        margin: 0 0 12px;
+      }
+
+      .card h3 {
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .panel h2 {
+        font-size: 1.1rem;
+      }
+
+      .metric-value {
+        font-size: 1.95rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+      }
+
+      .metric-sub,
+      .panel-sub,
+      .footer-note,
+      .empty-state,
+      .mini-meta,
+      .table-meta {
+        color: var(--muted);
+      }
+
+      .metric-sub,
+      .panel-sub,
+      .footer-note,
+      .empty-state,
+      .table-meta {
+        font-size: 0.85rem;
+        line-height: 1.55;
+      }
+
+      .metric-sub {
+        margin-top: 8px;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .panel-sub {
+        margin: -4px 0 14px;
+      }
+
+      .chart-shell {
+        position: relative;
+        min-height: 330px;
+        border-radius: 18px;
+        background: var(--panel-strong);
+        border: 1px solid var(--grid);
+        overflow: hidden;
+        padding: 16px 16px 12px;
+      }
+
+      .chart-shell.compact {
+        min-height: 280px;
+      }
+
+      .chart-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .chart-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+
+      .chart-range {
+        font-size: 0.78rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .chart-frame {
+        position: relative;
+        width: 100%;
+        height: 220px;
+      }
+
+      .chart-frame svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .chart-empty {
+        position: absolute;
+        inset: 56px 14px 14px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 18px;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .legend {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .legend-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        font-size: 0.82rem;
+      }
+
+      .swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .legend-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .legend-value {
+        font-family: "IBM Plex Mono", monospace;
+        color: var(--muted);
+      }
+
+      .mini-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .mini-row {
+        padding: 12px 13px;
+        border-radius: 16px;
+        border: 1px solid var(--grid);
+        background: var(--panel-strong);
+      }
+
+      .mini-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .mini-title {
+        font-weight: 700;
+      }
+
+      .mini-value {
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+
+      .mini-meta {
+        margin-top: 6px;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--ink);
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        border-radius: 16px;
+        border: 1px solid var(--grid);
+        background: var(--panel-strong);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+      }
+
+      th,
+      td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid var(--grid);
+        font-size: 0.88rem;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      .mono {
+        font-family: "IBM Plex Mono", monospace;
+      }
+
+      .footer-note {
+        margin-top: 18px;
+        font-size: 0.8rem;
+      }
+
+      .footer-link {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .footer-link:hover {
+        text-decoration: underline;
+      }
+
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 1020px) {
+        .chart-grid,
+        .lower-grid {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .header-actions {
+          width: 100%;
+          justify-content: flex-start;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .app {
+          padding: 28px 22px 36px;
+          margin: 0;
+          max-width: 100%;
+        }
+
+        .title-block h1 {
+          font-size: 1.8rem;
+        }
+
+        .title-block p {
+          font-size: 0.88rem;
+        }
+
+        .nav-link,
+        .theme-toggle,
+        .status-pill {
+          flex: 1 1 auto;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .app {
+          padding: 24px 18px 36px;
+        }
+
+        table {
+          min-width: 620px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div class="title-block">
+          <h1 id="page-title">Battery Info</h1>
+          <p id="page-subtitle">__BATTERYINFO_SUBTITLE__</p>
+        </div>
+        <div class="header-actions">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link" href="/traffic">Traffic</a>
+          __BATTERY_ACTIVE_LINK__
+          <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
+          <div class="status-pill" id="status-pill">
+            <span class="status-dot"></span>
+            <span id="status-text">Loading</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <div class="card">
+          <h3>Reports</h3>
+          <div class="metric-value" id="reports-count">0</div>
+          <div class="metric-sub" id="reports-sub">Deduped decoded reports in retention</div>
+        </div>
+        <div class="card">
+          <h3>Nodes Reporting</h3>
+          <div class="metric-value" id="nodes-count">0</div>
+          <div class="metric-sub" id="nodes-sub">Unique senders in the battery channel</div>
+        </div>
+        <div class="card">
+          <h3>Latest Battery</h3>
+          <div class="metric-value" id="latest-battery">--</div>
+          <div class="metric-sub" id="latest-battery-sub">Waiting for a decoded report</div>
+        </div>
+        <div class="card">
+          <h3>Latest Report</h3>
+          <div class="metric-value" id="latest-time">--</div>
+          <div class="metric-sub" id="latest-time-sub">Receiver-side timestamp in retention</div>
+        </div>
+      </section>
+
+      <section class="chart-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Battery Voltage</h2>
+            <div class="chart-range" id="voltage-range">Last __BATTERYINFO_RETENTION_SHORT__</div>
+          </div>
+          <p class="panel-sub">Decoded channel messages plotted by sender, using the retained packet receive time for the timeline.</p>
+          <div class="chart-shell">
+            <div class="chart-frame" id="chart-battery-v"></div>
+            <div class="legend" id="legend-battery-v"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Latest Node Reports</h2>
+            <div class="chart-range" id="node-meta">Newest first</div>
+          </div>
+          <p class="panel-sub">__BATTERYINFO_LATEST_NODES_SUB__</p>
+          <div class="mini-list" id="latest-nodes"></div>
+        </div>
+      </section>
+
+      <section class="lower-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Charge Percent</h2>
+            <div class="chart-range">Battery %</div>
+          </div>
+          <div class="chart-shell compact">
+            <div class="chart-frame" id="chart-battery-percent"></div>
+            <div class="legend" id="legend-battery-percent"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Temperature</h2>
+            <div class="chart-range">Celsius</div>
+          </div>
+          <div class="chart-shell compact">
+            <div class="chart-frame" id="chart-temp-c"></div>
+            <div class="legend" id="legend-temp-c"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Humidity</h2>
+            <div class="chart-range">Percent</div>
+          </div>
+          <div class="chart-shell compact">
+            <div class="chart-frame" id="chart-humidity-percent"></div>
+            <div class="legend" id="legend-humidity-percent"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Pressure</h2>
+            <div class="chart-range">hPa</div>
+          </div>
+          <div class="chart-shell compact">
+            <div class="chart-frame" id="chart-pressure-hpa"></div>
+            <div class="legend" id="legend-pressure-hpa"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Altitude</h2>
+            <div class="chart-range">Meters</div>
+          </div>
+          <div class="chart-shell compact">
+            <div class="chart-frame" id="chart-altitude-m"></div>
+            <div class="legend" id="legend-altitude-m"></div>
+          </div>
+        </div>
+
+      </section>
+
+      <section class="panel table-section">
+        <div class="panel-head">
+          <h2>Recent Decoded Messages</h2>
+          <div class="chart-range" id="table-meta">Newest 25</div>
+        </div>
+        <p class="table-meta">Only deduped channel messages that successfully decrypt and match the battery telemetry pattern are listed here.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Sender</th>
+                <th>Battery</th>
+                <th>Environment</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="recent-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="footer-note">
+        Decoded from retained group text packets using your configured channel secret. Historical window follows battery retention (__BATTERYINFO_FOOTER_RETENTION__).
+        <a class="footer-link" href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a>
+      </p>
+    </div>
+
+    <script>
+      const palette = ["#4aa3ff", "#5de2c5", "#ffbe6b", "#ff7b66", "#b28cff", "#79d36b", "#f96f92", "#8bd3ff"];
+      const chartConfigs = [
+        { key: "battery_v", frameId: "chart-battery-v", legendId: "legend-battery-v", unit: "V", digits: 2, title: "Battery Voltage" },
+        { key: "battery_percent", frameId: "chart-battery-percent", legendId: "legend-battery-percent", unit: "%", digits: 0, title: "Charge Percent" },
+        { key: "temp_c", frameId: "chart-temp-c", legendId: "legend-temp-c", unit: "C", digits: 1, title: "Temperature" },
+        { key: "humidity_percent", frameId: "chart-humidity-percent", legendId: "legend-humidity-percent", unit: "%", digits: 1, title: "Humidity" },
+        { key: "pressure_hpa", frameId: "chart-pressure-hpa", legendId: "legend-pressure-hpa", unit: "hPa", digits: 1, title: "Pressure" },
+        { key: "altitude_m", frameId: "chart-altitude-m", legendId: "legend-altitude-m", unit: "m", digits: 1, title: "Altitude" },
+      ];
+
+      const elements = {
+        statusPill: document.getElementById("status-pill"),
+        statusText: document.getElementById("status-text"),
+        reportsCount: document.getElementById("reports-count"),
+        nodesCount: document.getElementById("nodes-count"),
+        latestBattery: document.getElementById("latest-battery"),
+        latestBatterySub: document.getElementById("latest-battery-sub"),
+        latestTime: document.getElementById("latest-time"),
+        latestTimeSub: document.getElementById("latest-time-sub"),
+        latestNodes: document.getElementById("latest-nodes"),
+        recentTable: document.getElementById("recent-table"),
+        themeToggle: document.getElementById("theme-toggle"),
+      };
+
+      function setTheme(mode) {
+        document.documentElement.dataset.theme = mode;
+        elements.themeToggle.textContent = mode === "light" ? "Dark Mode" : "Light Mode";
+        localStorage.setItem("mqttDashboardTheme", mode);
+      }
+
+      function initTheme() {
+        const stored = localStorage.getItem("mqttDashboardTheme");
+        if (stored === "light" || stored === "dark") {
+          setTheme(stored);
+          return;
+        }
+        setTheme("dark");
+      }
+
+      function formatNumber(value, digits = 0) {
+        if (value === null || value === undefined || Number.isNaN(value)) {
+          return "--";
+        }
+        return Number(value).toLocaleString(undefined, {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+      }
+
+      function formatMetric(value, unit, digits) {
+        if (value === null || value === undefined || Number.isNaN(value)) {
+          return "n/a";
+        }
+        return `${formatNumber(value, digits)}${unit}`;
+      }
+
+      function formatTimestamp(ts) {
+        if (!ts) {
+          return "--";
+        }
+        return new Date(ts * 1000).toLocaleString();
+      }
+
+      function relativeAge(ts) {
+        if (!ts) {
+          return "--";
+        }
+        const delta = Math.max(0, Math.round(Date.now() / 1000 - ts));
+        if (delta < 60) return `${delta}s ago`;
+        if (delta < 3600) return `${Math.round(delta / 60)}m ago`;
+        if (delta < 86400) return `${Math.round(delta / 3600)}h ago`;
+        return `${Math.round(delta / 86400)}d ago`;
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function getNodeColorMap(nodes) {
+        const map = new Map();
+        nodes.forEach((node, index) => {
+          map.set(node.sender_name, palette[index % palette.length]);
+        });
+        return map;
+      }
+
+      function renderLatestNodes(nodes, colorMap) {
+        if (!nodes.length) {
+          elements.latestNodes.innerHTML = '<div class="empty-state">No decoded battery reports are available in the retained packet window.</div>';
+          return;
+        }
+        elements.latestNodes.innerHTML = nodes.map((node) => {
+          const badges = [
+            `<span class="badge">${formatMetric(node.battery_v, "V", 2)}</span>`,
+            `<span class="badge">${formatMetric(node.battery_percent, "%", 0)}</span>`,
+          ];
+          if (node.temp_c !== null && node.temp_c !== undefined) {
+            badges.push(`<span class="badge">${formatMetric(node.temp_c, "C", 1)}</span>`);
+          }
+          if (node.humidity_percent !== null && node.humidity_percent !== undefined) {
+            badges.push(`<span class="badge">${formatMetric(node.humidity_percent, "%", 1)}</span>`);
+          }
+          return `
+            <div class="mini-row">
+              <div class="mini-top">
+                <div class="mini-title"><span class="swatch" style="background:${colorMap.get(node.sender_name)}"></span> ${escapeHtml(node.sender_name)}</div>
+                <div class="mini-value">${relativeAge(node.ts)}</div>
+              </div>
+              <div class="mini-meta">${formatTimestamp(node.ts)}</div>
+              <div class="badge-row">${badges.join("")}</div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function renderRecentTable(entries) {
+        if (!entries.length) {
+          elements.recentTable.innerHTML = '<tr><td colspan="5" class="empty-state">No decoded battery messages in retention.</td></tr>';
+          return;
+        }
+        const rows = entries.slice(-25).reverse().map((entry) => {
+          const env = [
+            entry.temp_c != null ? `temp=${formatMetric(entry.temp_c, "C", 1)}` : null,
+            entry.humidity_percent != null ? `hum=${formatMetric(entry.humidity_percent, "%", 1)}` : null,
+            entry.pressure_hpa != null ? `press=${formatMetric(entry.pressure_hpa, "hPa", 1)}` : null,
+            entry.altitude_m != null ? `alt=${formatMetric(entry.altitude_m, "m", 1)}` : null,
+          ].filter(Boolean).join(" ");
+          return `
+            <tr>
+              <td class="mono">${escapeHtml(formatTimestamp(entry.ts))}</td>
+              <td>${escapeHtml(entry.sender_name)}</td>
+              <td>${escapeHtml(formatMetric(entry.battery_v, "V", 2))} / ${escapeHtml(formatMetric(entry.battery_percent, "%", 0))}</td>
+              <td>${escapeHtml(env || "n/a")}</td>
+              <td>${escapeHtml(entry.text)}</td>
+            </tr>
+          `;
+        });
+        elements.recentTable.innerHTML = rows.join("");
+      }
+
+      function buildSeries(entries, key) {
+        const groups = new Map();
+        entries.forEach((entry) => {
+          const value = entry[key];
+          if (value === null || value === undefined || Number.isNaN(value)) {
+            return;
+          }
+          const seriesKey = entry.sender_name || entry.packet_name || entry.node_id || "Unknown";
+          if (!groups.has(seriesKey)) {
+            groups.set(seriesKey, []);
+          }
+          groups.get(seriesKey).push({ ts: entry.ts, value });
+        });
+        return Array.from(groups.entries()).map(([name, points]) => ({
+          name,
+          points: points.sort((a, b) => a.ts - b.ts),
+        }));
+      }
+
+      function renderChart(config, entries, colorMap, retentionSeconds) {
+        const frame = document.getElementById(config.frameId);
+        const legend = document.getElementById(config.legendId);
+        const series = buildSeries(entries, config.key);
+        if (!series.length) {
+          frame.innerHTML = `<div class="chart-empty">${config.title} has no decoded values in the retained window.</div>`;
+          legend.innerHTML = "";
+          return;
+        }
+
+        const width = 920;
+        const height = 220;
+        const margin = { top: 12, right: 12, bottom: 28, left: 52 };
+        const allPoints = series.flatMap((item) => item.points);
+        const minTs = Math.min(...allPoints.map((point) => point.ts));
+        const maxTs = Math.max(...allPoints.map((point) => point.ts));
+        let minValue = Math.min(...allPoints.map((point) => point.value));
+        let maxValue = Math.max(...allPoints.map((point) => point.value));
+        if (minValue === maxValue) {
+          minValue -= 1;
+          maxValue += 1;
+        }
+        const pad = (maxValue - minValue) * 0.12;
+        minValue -= pad;
+        maxValue += pad;
+
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        const timeSpan = Math.max(1, maxTs - minTs);
+        const valueSpan = Math.max(1e-6, maxValue - minValue);
+        const xFor = (ts) => margin.left + ((ts - minTs) / timeSpan) * plotWidth;
+        const yFor = (value) => margin.top + plotHeight - ((value - minValue) / valueSpan) * plotHeight;
+
+        const gridLines = [];
+        for (let i = 0; i <= 4; i += 1) {
+          const ratio = i / 4;
+          const y = margin.top + ratio * plotHeight;
+          const value = maxValue - ratio * valueSpan;
+          gridLines.push(`<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" stroke="var(--grid)" stroke-width="1" />`);
+          gridLines.push(`<text x="${margin.left - 8}" y="${y + 4}" text-anchor="end" fill="var(--muted)" font-size="11">${formatNumber(value, config.digits)}</text>`);
+        }
+
+        const startLabel = new Date(minTs * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        const endLabel = new Date(maxTs * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        const axisLabels = [
+          `<text x="${margin.left}" y="${height - 6}" text-anchor="start" fill="var(--muted)" font-size="11">${escapeHtml(startLabel)}</text>`,
+          `<text x="${width - margin.right}" y="${height - 6}" text-anchor="end" fill="var(--muted)" font-size="11">${escapeHtml(endLabel)}</text>`,
+        ];
+
+        const paths = series.map((item) => {
+          const color = colorMap.get(item.name) || palette[0];
+          const d = item.points.map((point, index) => `${index === 0 ? "M" : "L"}${xFor(point.ts).toFixed(2)},${yFor(point.value).toFixed(2)}`).join(" ");
+          const circles = item.points.map((point) => `<circle cx="${xFor(point.ts).toFixed(2)}" cy="${yFor(point.value).toFixed(2)}" r="3.4" fill="${color}" />`).join("");
+          return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />${circles}`;
+        }).join("");
+
+        frame.innerHTML = `
+          <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="${escapeHtml(config.title)} over time">
+            ${gridLines.join("")}
+            <line x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}" stroke="var(--grid)" stroke-width="1" />
+            ${paths}
+            ${axisLabels.join("")}
+          </svg>
+        `;
+
+        legend.innerHTML = series.map((item) => {
+          const latest = item.points[item.points.length - 1];
+          const color = colorMap.get(item.name) || palette[0];
+          return `
+            <div class="legend-row">
+              <span class="swatch" style="background:${color}"></span>
+              <div class="legend-name">${escapeHtml(item.name)}</div>
+              <div class="legend-value">${escapeHtml(formatMetric(latest.value, config.unit, config.digits))}</div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function renderPayload(payload) {
+        const enabled = Boolean(payload.enabled);
+        elements.statusPill.classList.toggle("ready", enabled);
+        elements.statusText.textContent = enabled ? "Channel Ready" : "Channel Disabled";
+        elements.reportsCount.textContent = formatNumber(payload.stats.reports || 0, 0);
+        elements.nodesCount.textContent = formatNumber(payload.stats.nodes || 0, 0);
+
+        if (payload.stats.latest_battery_v !== null && payload.stats.latest_battery_v !== undefined) {
+          elements.latestBattery.textContent = `${formatMetric(payload.stats.latest_battery_v, "V", 2)} / ${formatMetric(payload.stats.latest_battery_percent, "%", 0)}`;
+          const latestNode = (payload.nodes || [])[0];
+          elements.latestBatterySub.textContent = latestNode ? latestNode.sender_name : "Latest decoded sender";
+        } else {
+          elements.latestBattery.textContent = "--";
+          elements.latestBatterySub.textContent = enabled ? "No decoded battery reports yet" : "Configure BATTERYINFO_CHANNEL_KEY";
+        }
+
+        elements.latestTime.textContent = payload.stats.latest_report_at ? relativeAge(payload.stats.latest_report_at) : "--";
+        elements.latestTimeSub.textContent = payload.stats.latest_report_at ? formatTimestamp(payload.stats.latest_report_at) : (payload.reason || "No reports yet");
+
+        const colorMap = getNodeColorMap(payload.nodes || []);
+        renderLatestNodes(payload.nodes || [], colorMap);
+        renderRecentTable(payload.entries || []);
+        chartConfigs.forEach((config) => renderChart(config, payload.entries || [], colorMap, payload.retention_seconds || 0));
+      }
+
+      async function loadBatteryInfo() {
+        try {
+          const response = await fetch("/batteryinfo/data", { cache: "no-store" });
+          const payload = await response.json();
+          renderPayload(payload);
+        } catch (error) {
+          elements.statusText.textContent = "Load Failed";
+          elements.reportsCount.textContent = "--";
+          elements.nodesCount.textContent = "--";
+          elements.latestBattery.textContent = "--";
+          elements.latestBatterySub.textContent = String(error);
+          elements.latestNodes.innerHTML = '<div class="empty-state">Unable to load decoded battery data.</div>';
+          elements.recentTable.innerHTML = '<tr><td colspan="5" class="empty-state">Unable to load decoded battery data.</td></tr>';
+          chartConfigs.forEach((config) => {
+            document.getElementById(config.frameId).innerHTML = '<div class="chart-empty">Unable to load chart data.</div>';
+            document.getElementById(config.legendId).innerHTML = "";
+          });
+        }
+      }
+
+      elements.themeToggle.addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+        setTheme(next);
+      });
+
+      initTheme();
+      loadBatteryInfo();
+    </script>
+  </body>
+</html>

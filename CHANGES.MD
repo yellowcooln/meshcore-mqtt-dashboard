@@ -1,5 +1,12 @@
 # Changes
 
+## v1.3.1 - 2026-03-29
+- Added an optional public `/batteryinfo` page for decoded channel telemetry charts and recent battery reports.
+- Added `batteryinfo_events` SQLite persistence so battery telemetry is backfilled from retained packets and stays fast on reload.
+- Added battery feature env controls for enable/disable, channel name, channel name visibility, channel key, and a separate battery retention window.
+- Set battery info to default off in `.env.example` so fresh deploys do not expose the page unless configured.
+- Switched the battery decoder dependency to the official `@michaelhart/meshcore-decoder` package.
+
 ## v1.3.0 - 2026-03-24
 - Added a dedicated public `/traffic` page for retained packet analysis.
 - Added retained traffic charts, top talkers, and burst bins backed by SQLite history.
