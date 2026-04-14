@@ -121,3 +121,13 @@ Copy `.env.example` and set what you need.
 - `MQTT_HOST` and `MQTT_PORT` control the actual connection target; `DASH_BROKER_HOST` only changes what the dashboard displays.
 - If `DASH_BROKER_HOST` is set, the dashboard shows it exactly as provided.
 - Favicon is rendered only when `DASH_LOGO_URL` is valid and supported.
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=yellowcooln%2Fmeshcore-mqtt-dashboard&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=yellowcooln/meshcore-mqtt-dashboard&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=yellowcooln/meshcore-mqtt-dashboard&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=yellowcooln/meshcore-mqtt-dashboard&type=date&legend=top-left" />
+ </picture>
+</a>
