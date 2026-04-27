@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import sqlite3
 import time
+from types import SimpleNamespace
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -141,3 +142,29 @@ def test_batteryinfo_routes_404_when_disabled(client):
   assert 'href="/batteryinfo"' not in index.text
   traffic = client.get("/traffic")
   assert 'href="/batteryinfo"' not in traffic.text
+
+
+def test_mqtt_message_does_not_enter_battery_path_when_disabled(monkeypatch):
+  dashboard_app.BATTERYINFO_ENABLED = False
+  monkeypatch.setattr(dashboard_app, "_decode_payload", lambda payload: {"json": {"packet_type": "5"}})
+  monkeypatch.setattr(dashboard_app, "_is_sys_topic", lambda topic: False)
+  monkeypatch.setattr(dashboard_app, "_should_ignore_retained_message", lambda topic, msg: False)
+  monkeypatch.setattr(dashboard_app, "_extract_packet_event", lambda topic, payload_info: None)
+  monkeypatch.setattr(
+    dashboard_app,
+    "_update_node",
+    lambda topic, payload_info: dashboard_app.NodeState(node_id="node-a", last_seen=time.time()),
+  )
+  monkeypatch.setattr(dashboard_app, "_record_message", lambda: None)
+  monkeypatch.setattr(dashboard_app, "_save_packet", lambda topic, payload_info, node: None)
+  monkeypatch.setattr(dashboard_app, "_record_traffic_event", lambda packet_event: None)
+  monkeypatch.setattr(dashboard_app, "_build_stats", lambda now: {})
+  monkeypatch.setattr(dashboard_app, "_queue_broadcast", lambda message: None)
+  monkeypatch.setattr(
+    dashboard_app,
+    "_record_batteryinfo_event",
+    lambda *args, **kwargs: pytest.fail("battery decoder path should not run when disabled"),
+  )
+
+  msg = SimpleNamespace(topic="meshcore/BOS/node-a/packets", payload=b"{}", retain=False)
+  dashboard_app.mqtt_on_message(None, None, msg)

@@ -2181,7 +2181,8 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
   now = time.time()
   _save_packet(topic, payload_info, node)
   unique_packet_event = _record_traffic_event(packet_event)
-  _record_batteryinfo_event(topic, payload_info, node, now)
+  if BATTERYINFO_ENABLED:
+    _record_batteryinfo_event(topic, payload_info, node, now)
   traffic_summary = None
   if unique_packet_event:
     traffic_summary = _build_traffic(now, include_history=False)
