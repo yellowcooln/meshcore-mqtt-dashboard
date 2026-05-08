@@ -20,10 +20,37 @@ docker compose up -d --build
 
 Open `http://localhost:8081` (or set `WEB_PORT`).
 
-Published image example:
+Published image examples:
 
 ```bash
 docker pull yellowcooln/meshcore-mqtt-dashboard:latest
+```
+
+Run the published image directly:
+
+```bash
+docker run -d \
+  --name mqtt-dashboard \
+  --env-file .env \
+  -p 8081:8081 \
+  -v "$(pwd)/data:/data" \
+  yellowcooln/meshcore-mqtt-dashboard:latest
+```
+
+Use the published image in Compose:
+
+```yaml
+services:
+  mqtt-dashboard:
+    image: yellowcooln/meshcore-mqtt-dashboard:latest
+    container_name: mqtt-dashboard
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
 ```
 
 ## Local Development (Python)
