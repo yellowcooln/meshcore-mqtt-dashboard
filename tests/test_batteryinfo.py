@@ -146,6 +146,7 @@ def test_batteryinfo_routes_404_when_disabled(client):
 
 def test_mqtt_message_does_not_enter_battery_path_when_disabled(monkeypatch):
   dashboard_app.BATTERYINFO_ENABLED = False
+  dashboard_app.ws_client_count = 0
   monkeypatch.setattr(dashboard_app, "_decode_payload", lambda payload: {"json": {"packet_type": "5"}})
   monkeypatch.setattr(dashboard_app, "_is_sys_topic", lambda topic: False)
   monkeypatch.setattr(dashboard_app, "_should_ignore_retained_message", lambda topic, msg: False)
@@ -158,8 +159,21 @@ def test_mqtt_message_does_not_enter_battery_path_when_disabled(monkeypatch):
   monkeypatch.setattr(dashboard_app, "_record_message", lambda: None)
   monkeypatch.setattr(dashboard_app, "_save_packet", lambda topic, payload_info, node: None)
   monkeypatch.setattr(dashboard_app, "_record_traffic_event", lambda packet_event: None)
-  monkeypatch.setattr(dashboard_app, "_build_stats", lambda now: {})
-  monkeypatch.setattr(dashboard_app, "_queue_broadcast", lambda message: None)
+  monkeypatch.setattr(
+    dashboard_app,
+    "_build_stats",
+    lambda now: pytest.fail("stats should not be built when no websocket clients are connected"),
+  )
+  monkeypatch.setattr(
+    dashboard_app,
+    "_build_traffic",
+    lambda now, include_history=True: pytest.fail("traffic summary should not be built when no websocket clients are connected"),
+  )
+  monkeypatch.setattr(
+    dashboard_app,
+    "_queue_broadcast",
+    lambda message: pytest.fail("broadcasts should not be queued when no websocket clients are connected"),
+  )
   monkeypatch.setattr(
     dashboard_app,
     "_record_batteryinfo_event",

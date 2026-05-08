@@ -54,6 +54,7 @@ def client(monkeypatch):
   dashboard_app.broker_state["tls"] = dashboard_app.MQTT_TLS
   dashboard_app.broker_state["topic"] = dashboard_app.MQTT_TOPIC_RAW
   dashboard_app.broker_state["title"] = dashboard_app.DASH_TITLE
+  dashboard_app.ws_client_count = 0
 
   with TestClient(dashboard_app.app) as test_client:
     yield test_client
