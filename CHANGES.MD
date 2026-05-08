@@ -1,5 +1,12 @@
 # Changes
 
+## v1.3.2 - 2026-05-08
+- Reduced idle CPU work in the MQTT hot path.
+- Skip the battery decode path entirely when `BATTERYINFO_ENABLED=false`.
+- Skip websocket stats, traffic summary building, and broadcast queue work when no dashboard clients are connected.
+- Enabled SQLite `WAL` mode with `NORMAL` sync and in-memory temp storage for the write-heavy packet database path.
+- Added regression coverage for the disabled battery path and no-client websocket fast path.
+
 ## v1.3.1 - 2026-03-29
 - Added an optional public `/batteryinfo` page for decoded channel telemetry charts and recent battery reports.
 - Added `batteryinfo_events` SQLite persistence so battery telemetry is backfilled from retained packets and stays fast on reload.

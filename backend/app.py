@@ -27,7 +27,7 @@ TRAFFIC_PATH = os.path.join(STATIC_DIR, "traffic.html")
 BATTERYINFO_PATH = os.path.join(STATIC_DIR, "batteryinfo.html")
 BATTERYINFO_DECODER_PATH = os.path.join(ROOT_DIR, "scripts", "batteryinfo-decoder.cjs")
 DATA_DIR = os.path.join(os.path.dirname(ROOT_DIR), "data")
-APP_VERSION = "v1.3.1"
+APP_VERSION = "v1.3.2"
 
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
