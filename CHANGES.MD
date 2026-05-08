@@ -6,6 +6,7 @@
 - Skip websocket stats, traffic summary building, and broadcast queue work when no dashboard clients are connected.
 - Enabled SQLite `WAL` mode with `NORMAL` sync and in-memory temp storage for the write-heavy packet database path.
 - Added regression coverage for the disabled battery path and no-client websocket fast path.
+- Documented the published Docker Hub image `yellowcooln/meshcore-mqtt-dashboard` and its GitHub Actions publish workflow.
 
 ## v1.3.1 - 2026-03-29
 - Added an optional public `/batteryinfo` page for decoded channel telemetry charts and recent battery reports.

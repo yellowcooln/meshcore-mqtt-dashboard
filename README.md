@@ -5,6 +5,7 @@ Live MQTT dashboard for node presence, retained traffic analysis, roles, and bro
 - Release notes: [CHANGES.MD](./CHANGES.MD)
 - Current version: `v1.3.2`
 - Preview: [https://mcmqttdashboard.bostonme.sh/](https://mcmqttdashboard.bostonme.sh/)
+- Docker image: `yellowcooln/meshcore-mqtt-dashboard`
 
 ![Dashboard preview](./docs/example.png)
 
@@ -18,6 +19,12 @@ docker compose up -d --build
 ```
 
 Open `http://localhost:8081` (or set `WEB_PORT`).
+
+Published image example:
+
+```bash
+docker pull yellowcooln/meshcore-mqtt-dashboard:latest
+```
 
 ## Local Development (Python)
 
@@ -38,6 +45,7 @@ pytest -q
 ```
 
 CI runs the same suite in GitHub Actions on pull requests and pushes to `main`/`dev`.
+Docker images are published from `main` to Docker Hub as `yellowcooln/meshcore-mqtt-dashboard`.
 
 ## API and Auth
 
