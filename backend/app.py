@@ -27,7 +27,7 @@ TRAFFIC_PATH = os.path.join(STATIC_DIR, "traffic.html")
 BATTERYINFO_PATH = os.path.join(STATIC_DIR, "batteryinfo.html")
 BATTERYINFO_DECODER_PATH = os.path.join(ROOT_DIR, "scripts", "batteryinfo-decoder.cjs")
 DATA_DIR = os.path.join(os.path.dirname(ROOT_DIR), "data")
-APP_VERSION = "v1.3.1"
+APP_VERSION = "v1.3.2"
 
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
@@ -267,6 +267,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 state_lock = threading.Lock()
 ws_clients: Set[WebSocket] = set()
+ws_client_count = 0
 broadcast_queue: asyncio.Queue = asyncio.Queue()
 
 mqtt_client: Optional[mqtt.Client] = None
@@ -1872,9 +1873,16 @@ def _build_snapshot() -> Dict[str, Any]:
 
 
 def _queue_broadcast(message: Dict[str, Any]) -> None:
+  if not _has_ws_clients():
+    return
   loop = getattr(app.state, "loop", None)
   if loop and loop.is_running():
     loop.call_soon_threadsafe(broadcast_queue.put_nowait, message)
+
+
+def _has_ws_clients() -> bool:
+  with state_lock:
+    return ws_client_count > 0
 
 
 def _init_packet_db() -> None:
@@ -1883,6 +1891,9 @@ def _init_packet_db() -> None:
     return
   os.makedirs(os.path.dirname(PACKET_DB_PATH), exist_ok=True)
   packet_db = sqlite3.connect(PACKET_DB_PATH, check_same_thread=False)
+  packet_db.execute("PRAGMA journal_mode=WAL")
+  packet_db.execute("PRAGMA synchronous=NORMAL")
+  packet_db.execute("PRAGMA temp_store=MEMORY")
   packet_db.execute(
     """
     CREATE TABLE IF NOT EXISTS packets (
@@ -2159,17 +2170,19 @@ def mqtt_on_disconnect(client, userdata, disconnect_flags=None, reason_code=None
 def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
   payload_info = _decode_payload(msg.payload)
   topic = msg.topic
+  should_broadcast = _has_ws_clients()
 
   if _is_sys_topic(topic):
     sys_value = _update_sys(topic, payload_info)
-    _queue_broadcast(
-      {
-        "type": "sys_update",
-        "topic": topic,
-        "value": sys_value,
-        "received_at": time.time(),
-      }
-    )
+    if should_broadcast:
+      _queue_broadcast(
+        {
+          "type": "sys_update",
+          "topic": topic,
+          "value": sys_value,
+          "received_at": time.time(),
+        }
+      )
     return
 
   if _should_ignore_retained_message(topic, msg):
@@ -2181,7 +2194,10 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
   now = time.time()
   _save_packet(topic, payload_info, node)
   unique_packet_event = _record_traffic_event(packet_event)
-  _record_batteryinfo_event(topic, payload_info, node, now)
+  if BATTERYINFO_ENABLED:
+    _record_batteryinfo_event(topic, payload_info, node, now)
+  if not should_broadcast:
+    return
   traffic_summary = None
   if unique_packet_event:
     traffic_summary = _build_traffic(now, include_history=False)
@@ -2359,11 +2375,16 @@ async def traffic_packets(
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
+  global ws_client_count
   await ws.accept()
-  ws_clients.add(ws)
+  with state_lock:
+    ws_clients.add(ws)
+    ws_client_count = len(ws_clients)
   await ws.send_json({"type": "snapshot", **_build_snapshot()})
   try:
     while True:
       await ws.receive_text()
   except WebSocketDisconnect:
-    ws_clients.discard(ws)
+    with state_lock:
+      ws_clients.discard(ws)
+      ws_client_count = len(ws_clients)

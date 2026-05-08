@@ -8,6 +8,7 @@
 - `backend/requirements.txt` defines Python dependencies.
 - `backend/Dockerfile` builds the service image.
 - `docker-compose.yaml` runs the service as `mqtt-dashboard`.
+- `.github/workflows/docker-publish.yml` publishes `yellowcooln/meshcore-mqtt-dashboard`.
 - `data/` stores the SQLite packet database and optional role overrides.
 - `.env` holds runtime settings; `.env.example` mirrors template defaults.
 

@@ -19,6 +19,9 @@ pip install -r requirements.txt
 uvicorn app:app --reload --host 0.0.0.0 --port 8081
 ```
 
+Docker publish workflow:
+- `.github/workflows/docker-publish.yml` publishes `yellowcooln/meshcore-mqtt-dashboard` from `main`.
+
 ## Guidelines
 - Keep `backend/app.py` and `backend/static/index.html` at **2-space indentation**.
 - Keep `backend/static/traffic.html` at 2-space indentation as well.

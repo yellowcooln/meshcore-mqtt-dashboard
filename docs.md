@@ -8,14 +8,16 @@ This project provides a live MQTT dashboard that tracks broker status, node pres
 - `backend/static/index.html`: dashboard UI, tables, and theme toggle.
 - `backend/static/traffic.html`: retained traffic page UI and charts.
 - `docker-compose.yaml`: runtime configuration.
+- `.github/workflows/docker-publish.yml`: Docker Hub publish workflow for `yellowcooln/meshcore-mqtt-dashboard`.
 - `data/packets.db`: SQLite packet storage (retained by `PACKET_RETENTION_SECONDS`).
 - `.env`: runtime configuration (mirrors `.env.example`).
 
 ## Runtime Commands
 - `docker compose up -d --build` (run after any file changes).
 - `docker compose logs -f mqtt-dashboard` (watch MQTT + app logs).
-- Startup logs include the running app version (currently `v1.3.1`).
+- Startup logs include the running app version (currently `v1.3.2`).
 - `docker-compose.yaml` loads runtime vars from `.env` via `env_file`.
+- Docker Hub image: `yellowcooln/meshcore-mqtt-dashboard`.
 - `curl -s http://localhost:8081/snapshot` (broker + node snapshot).
 - `curl -s http://localhost:8081/packets?limit=50` (recent packets).
 - `http://localhost:8081/traffic` (retention-backed traffic page).
@@ -92,3 +94,4 @@ This project provides a live MQTT dashboard that tracks broker status, node pres
 ## Releases
 - Change history is tracked in [CHANGES.MD](./CHANGES.MD) (latest first).
 - CI tests run via `.github/workflows/tests.yml`.
+- Multi-arch Docker images are published via `.github/workflows/docker-publish.yml`.
