@@ -15,7 +15,10 @@ on:
 
 jobs:
   docker:
-    runs-on: ubuntu-latest
+    runs-on:
+      - self-hosted
+      - Linux
+      - x64
     permissions:
       contents: read
     steps:
