@@ -1,5 +1,10 @@
 # Changes
 
+## v1.3.3 - 2026-06-10
+- Synced the `dev` branch with `main` while preserving the self-hosted Docker publish runner workflow change.
+- Hardened the dashboard against CVE-2026-45323-style stored XSS by auditing untrusted MeshCore/MQTT render paths and escaping the remaining battery chart title HTML interpolation.
+- Added regression coverage for untrusted dashboard metadata, MeshCore node fields, retained traffic talkers, and decoded battery sender/message fields.
+
 ## v1.3.2 - 2026-05-08
 - Reduced idle CPU work in the MQTT hot path.
 - Skip the battery decode path entirely when `BATTERYINFO_ENABLED=false`.
