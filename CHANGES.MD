@@ -1,5 +1,13 @@
 # Changes
 
+## v1.3.3 - 2026-06-10
+- Synced the `dev` branch with `main` while preserving the self-hosted Docker publish runner workflow change.
+- Hardened the dashboard against CVE-2026-45323-style stored XSS by auditing untrusted MeshCore/MQTT render paths and escaping the remaining battery chart title HTML interpolation.
+- Added regression coverage for untrusted dashboard metadata, MeshCore node fields, retained traffic talkers, and decoded battery sender/message fields.
+- Updated non-major Python dependencies: FastAPI `0.136.3`, Uvicorn `0.49.0`, and HTTPX `0.28.1`.
+- Added Docker image build validation on pull requests targeting `main` without pushing images or requiring Docker Hub secrets.
+- Restored Docker image workflow runs on `dev` pushes while keeping the self-hosted Linux x64 runner configuration.
+
 ## v1.3.2 - 2026-05-08
 - Reduced idle CPU work in the MQTT hot path.
 - Skip the battery decode path entirely when `BATTERYINFO_ENABLED=false`.

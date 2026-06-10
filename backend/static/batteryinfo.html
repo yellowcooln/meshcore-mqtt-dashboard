@@ -867,7 +867,7 @@
         const legend = document.getElementById(config.legendId);
         const series = buildSeries(entries, config.key);
         if (!series.length) {
-          frame.innerHTML = `<div class="chart-empty">${config.title} has no decoded values in the retained window.</div>`;
+          frame.innerHTML = `<div class="chart-empty">${escapeHtml(config.title)} has no decoded values in the retained window.</div>`;
           legend.innerHTML = "";
           return;
         }
