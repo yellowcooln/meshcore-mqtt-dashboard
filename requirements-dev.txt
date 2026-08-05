@@ -1,4 +1,4 @@
 -r backend/requirements.txt
-cryptography==48.0.1
+cryptography==50.0.0
 pytest==9.0.3
 httpx==0.28.1
