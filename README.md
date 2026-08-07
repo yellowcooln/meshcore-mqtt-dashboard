@@ -1,9 +1,9 @@
 # MQTT Dashboard
 
-Live MQTT dashboard for node presence, retained traffic analysis, roles, and broker telemetry.
+Live MQTT dashboard for node presence, neighbor topology, retained traffic analysis, roles, and broker telemetry.
 
 - Release notes: [CHANGES.MD](./CHANGES.MD)
-- Current version: `v1.3.2`
+- Current version: `v1.3.4`
 - Preview: [https://mcmqttdashboard.bostonme.sh/](https://mcmqttdashboard.bostonme.sh/)
 - Docker image: `yellowcooln/meshcore-mqtt-dashboard`
 
@@ -78,13 +78,15 @@ Docker images are published from `main` to Docker Hub as `yellowcooln/meshcore-m
 
 - Public:
   - `/` (dashboard page)
+  - `/neighbors` (live observer and zero-hop neighbor topology)
   - `/traffic` (retention-backed traffic page)
   - `/batteryinfo` (optional decoded battery telemetry page)
-  - `/ws` (live dashboard websocket)
+  - `/ws` (live dashboard websocket, including neighbor topology)
 - Protected when `DASH_API_TOKEN` is set:
   - `/snapshot`
   - `/stats`
   - `/packets`
+  - `/neighbors/data`
 - Token can be sent by:
   - header `X-Dashboard-Token` (or `DASH_API_TOKEN_HEADER`)
   - `Authorization: Bearer <token>`
@@ -144,6 +146,9 @@ Copy `.env.example` and set what you need.
 - The traffic page uses retained packet history from SQLite across the full `PACKET_RETENTION_SECONDS` window.
 - Traffic history is rebuilt from `packets` into `traffic_events` when needed and persists across restarts.
 - `/traffic` includes retained packet rates, route/payload charts, top talkers, and burst bins.
+- `/neighbors` visualizes the latest `*/neighbors` MQTT snapshot from each observer as a live graph and filterable link table.
+- Neighbor snapshots include SNR, RF last-heard age, scope-query status, and flood scopes, and the latest snapshot per observer persists in SQLite across restarts.
+- The public `/ws` stream carries the same neighbor topology shown on the public `/neighbors` page; `DASH_API_TOKEN` protects `/neighbors/data`, not the public browser stream.
 - `/batteryinfo` is optional, disabled by default, and only appears when `BATTERYINFO_ENABLED=true`.
 - Battery telemetry is persisted in `batteryinfo_events` and uses its own retention window via `BATTERYINFO_RETENTION_SECONDS`.
 - Battery decode uses the official `@michaelhart/meshcore-decoder` package with the configured channel key.

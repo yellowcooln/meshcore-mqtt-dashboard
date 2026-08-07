@@ -10,6 +10,7 @@ import sqlite3
 import subprocess
 import threading
 import time
+from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 from collections import deque
 from dataclasses import dataclass, field
@@ -25,9 +26,10 @@ STATIC_DIR = os.path.join(ROOT_DIR, "static")
 INDEX_PATH = os.path.join(STATIC_DIR, "index.html")
 TRAFFIC_PATH = os.path.join(STATIC_DIR, "traffic.html")
 BATTERYINFO_PATH = os.path.join(STATIC_DIR, "batteryinfo.html")
+NEIGHBORS_PATH = os.path.join(STATIC_DIR, "neighbors.html")
 BATTERYINFO_DECODER_PATH = os.path.join(ROOT_DIR, "scripts", "batteryinfo-decoder.cjs")
 DATA_DIR = os.path.join(os.path.dirname(ROOT_DIR), "data")
-APP_VERSION = "v1.3.3"
+APP_VERSION = "v1.3.4"
 
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
@@ -71,6 +73,7 @@ DASH_TITLE = os.getenv("DASH_TITLE", "MQTT Observatory")
 DASH_DESCRIPTION = "Live node presence, roles, and broker telemetry."
 TRAFFIC_DESCRIPTION = "Live unique packet rates by route and packet type."
 BATTERYINFO_DESCRIPTION = "Decoded #batteryinfo chat telemetry across retained packet history."
+NEIGHBORS_DESCRIPTION = "Live observer neighbor topology, signal quality, and flood scopes."
 BATTERYINFO_ENABLED = os.getenv("BATTERYINFO_ENABLED", "false").lower() == "true"
 BATTERYINFO_CHANNEL_NAME = os.getenv("BATTERYINFO_CHANNEL_NAME", "batteryinfo").strip()
 BATTERYINFO_SHOW_CHANNEL_NAME = os.getenv("BATTERYINFO_SHOW_CHANNEL_NAME", "false").lower() == "true"
@@ -194,6 +197,7 @@ TOPIC_SUFFIXES = set(
     "downlink",
     "internal",
     "packets",
+    "neighbors",
   )
 )
 ROLE_MAP = {
@@ -329,6 +333,7 @@ class NodeState:
     }
 
 nodes: Dict[str, NodeState] = {}
+neighbor_snapshots: Dict[str, Dict[str, Any]] = {}
 sys_topics: Dict[str, Dict[str, Any]] = {}
 message_times = deque()
 message_total = 0
@@ -472,7 +477,10 @@ def _render_index_html(public_url: str) -> str:
     DASH_TITLE,
     DASH_DESCRIPTION,
     public_url,
-    {"__BATTERY_INDEX_LINK__": battery_link},
+    {
+      "__BATTERY_INDEX_LINK__": battery_link,
+      "__NEIGHBORS_INDEX_LINK__": '<a class="github-link" href="/neighbors">Neighbors</a>',
+    },
   )
 
 
@@ -485,6 +493,20 @@ def _render_traffic_html(public_url: str) -> str:
     TRAFFIC_PATH,
     traffic_title,
     TRAFFIC_DESCRIPTION,
+    public_url,
+    {"__BATTERY_NAV_LINK__": battery_link},
+  )
+
+
+def _render_neighbors_html(public_url: str) -> str:
+  neighbors_title = f"{DASH_TITLE} Neighbors"
+  battery_link = ""
+  if BATTERYINFO_ENABLED:
+    battery_link = '<a class="nav-link" href="/batteryinfo">Battery</a>'
+  return _render_html(
+    NEIGHBORS_PATH,
+    neighbors_title,
+    NEIGHBORS_DESCRIPTION,
     public_url,
     {"__BATTERY_NAV_LINK__": battery_link},
   )
@@ -617,7 +639,7 @@ def _is_api_authorized(headers: Mapping[str, str], query_params: Mapping[str, st
 
 
 def _is_protected_path(path: str) -> bool:
-  return path in ("/snapshot", "/stats", "/packets")
+  return path in ("/snapshot", "/stats", "/packets", "/neighbors/data")
 
 
 def _coerce_sys_value(text: str) -> Any:
@@ -651,6 +673,237 @@ def _decode_payload(payload: bytes) -> Dict[str, Any]:
   return {
     "text": text,
     "json": payload_obj,
+  }
+
+
+def _normalize_pubkey(value: Any) -> Optional[str]:
+  if not isinstance(value, str):
+    return None
+  cleaned = value.strip().lower()
+  if len(cleaned) != 64:
+    return None
+  try:
+    bytes.fromhex(cleaned)
+  except ValueError:
+    return None
+  return cleaned
+
+
+def _neighbors_observer_from_topic(topic: str) -> Optional[str]:
+  segments = [segment for segment in topic.split("/") if segment]
+  if len(segments) != 4 or segments[0] != "meshcore" or segments[3] != "neighbors":
+    return None
+  return _normalize_pubkey(segments[2])
+
+
+def _normalize_scopes(value: Any) -> list[str]:
+  if not isinstance(value, str):
+    return []
+  scopes = []
+  seen = set()
+  for raw_scope in value.split(","):
+    scope = raw_scope.strip()
+    if not scope or scope in seen:
+      continue
+    scopes.append(scope[:96])
+    seen.add(scope)
+    if len(scopes) >= 32:
+      break
+  return scopes
+
+
+def _normalize_neighbors_snapshot(
+  topic: str,
+  payload: Any,
+  received_at: float,
+) -> Optional[Dict[str, Any]]:
+  topic_observer_id = _neighbors_observer_from_topic(topic)
+  if not topic_observer_id or not isinstance(payload, dict):
+    return None
+
+  payload_observer_id = _normalize_pubkey(payload.get("origin_id"))
+  if topic_observer_id and payload_observer_id and topic_observer_id != payload_observer_id:
+    return None
+  observer_id = topic_observer_id or payload_observer_id
+  if not observer_id:
+    return None
+
+  raw_neighbors = payload.get("neighbors")
+  if not isinstance(raw_neighbors, list):
+    return None
+
+  normalized_neighbors = []
+  seen_neighbors = set()
+  allowed_statuses = {"responded", "timeout", "send_failed"}
+  for raw_neighbor in raw_neighbors[:100]:
+    if not isinstance(raw_neighbor, dict):
+      continue
+    pubkey = _normalize_pubkey(raw_neighbor.get("pubkey"))
+    if not pubkey or pubkey == observer_id or pubkey in seen_neighbors:
+      continue
+    raw_snr = raw_neighbor.get("snr")
+    raw_heard_secs_ago = raw_neighbor.get("heard_secs_ago")
+    if isinstance(raw_snr, bool) or not isinstance(raw_snr, (str, int, float)):
+      continue
+    if isinstance(raw_heard_secs_ago, bool) or not isinstance(raw_heard_secs_ago, (str, int, float)):
+      continue
+    if isinstance(raw_heard_secs_ago, float) and not raw_heard_secs_ago.is_integer():
+      continue
+    try:
+      snr = float(raw_snr)
+      heard_secs_ago = int(raw_heard_secs_ago)
+    except (TypeError, ValueError, OverflowError):
+      continue
+    if not math.isfinite(snr) or heard_secs_ago < 0:
+      continue
+    status = str(raw_neighbor.get("status") or "").strip().lower()
+    if status not in allowed_statuses:
+      status = "unknown"
+    normalized_neighbors.append(
+      {
+        "pubkey": pubkey,
+        "snr": round(snr, 2),
+        "heard_secs_ago": heard_secs_ago,
+        "heard_at": max(0.0, received_at - heard_secs_ago),
+        "scopes": _normalize_scopes(raw_neighbor.get("scopes")),
+        "status": status,
+      }
+    )
+    seen_neighbors.add(pubkey)
+
+  self_info = payload.get("self")
+  self_scopes = self_info.get("scopes") if isinstance(self_info, dict) else ""
+  origin = payload.get("origin")
+  if not isinstance(origin, str):
+    origin = ""
+  source_timestamp = payload.get("timestamp")
+  if not isinstance(source_timestamp, str):
+    source_timestamp = ""
+  source_timestamp = source_timestamp.strip()[:80]
+  reported_at = float(received_at)
+  if source_timestamp:
+    try:
+      parsed_timestamp = datetime.fromisoformat(source_timestamp.replace("Z", "+00:00"))
+      if parsed_timestamp.tzinfo is None:
+        parsed_timestamp = parsed_timestamp.replace(tzinfo=timezone.utc)
+      source_epoch = parsed_timestamp.timestamp()
+      if 1_577_836_800 <= source_epoch <= reported_at + 86_400:
+        reported_at = source_epoch
+    except (ValueError, OverflowError, OSError):
+      pass
+
+  for neighbor in normalized_neighbors:
+    neighbor["heard_at"] = max(0.0, reported_at - neighbor["heard_secs_ago"])
+
+  return {
+    "observer_id": observer_id,
+    "origin": origin.strip()[:120],
+    "topic": topic,
+    "source_timestamp": source_timestamp,
+    "reported_at": reported_at,
+    "received_at": float(received_at),
+    "scopes": _normalize_scopes(self_scopes),
+    "neighbors": normalized_neighbors,
+  }
+
+
+def _build_neighbors_topology() -> Dict[str, Any]:
+  now = time.time()
+  with state_lock:
+    snapshots = list(neighbor_snapshots.values())
+    node_names = {
+      node_id: node.name
+      for node_id, node in nodes.items()
+      if node.name
+    }
+    cached_names = dict(name_cache)
+
+  observers = []
+  devices: Dict[str, Dict[str, Any]] = {}
+  links = []
+  observer_ids = {snapshot["observer_id"] for snapshot in snapshots}
+  responded = 0
+  unresolved = 0
+  last_update = 0.0
+
+  for snapshot in sorted(snapshots, key=lambda item: item["observer_id"]):
+    observer_id = snapshot["observer_id"]
+    origin = snapshot.get("origin") or node_names.get(observer_id) or cached_names.get(observer_id) or ""
+    received_at = float(snapshot.get("received_at") or 0.0)
+    reported_at = float(snapshot.get("reported_at") or received_at)
+    last_update = max(last_update, reported_at)
+    observers.append(
+      {
+        "observer_id": observer_id,
+        "origin": origin,
+        "topic": snapshot.get("topic") or "",
+        "source_timestamp": snapshot.get("source_timestamp") or "",
+        "reported_at": reported_at,
+        "received_at": received_at,
+        "scopes": list(snapshot.get("scopes") or []),
+        "neighbor_count": len(snapshot.get("neighbors") or []),
+      }
+    )
+    observer_device = devices.setdefault(
+      observer_id,
+      {
+        "device_id": observer_id,
+        "name": origin,
+        "kind": "observer",
+        "observer_count": 0,
+      },
+    )
+    observer_device["kind"] = "observer"
+    if origin:
+      observer_device["name"] = origin
+    for neighbor in snapshot.get("neighbors") or []:
+      neighbor_id = neighbor["pubkey"]
+      status = neighbor.get("status") or "unknown"
+      if status == "responded":
+        responded += 1
+      else:
+        unresolved += 1
+      link = {
+        "observer_id": observer_id,
+        "neighbor_id": neighbor_id,
+        "snr": neighbor.get("snr"),
+        "heard_secs_ago": neighbor.get("heard_secs_ago"),
+        "heard_at": neighbor.get("heard_at"),
+        "scopes": list(neighbor.get("scopes") or []),
+        "status": status,
+        "reported_at": reported_at,
+        "received_at": received_at,
+      }
+      links.append(link)
+      device = devices.setdefault(
+        neighbor_id,
+        {
+          "device_id": neighbor_id,
+          "name": node_names.get(neighbor_id) or cached_names.get(neighbor_id) or "",
+          "kind": "observer" if neighbor_id in observer_ids else "neighbor",
+          "observer_count": 0,
+        },
+      )
+      device["observer_count"] += 1
+
+  links.sort(key=lambda item: (item["observer_id"], item["neighbor_id"]))
+  device_list = sorted(
+    devices.values(),
+    key=lambda item: (item["kind"] != "observer", (item["name"] or item["device_id"]).lower()),
+  )
+  return {
+    "generated_at": now,
+    "observers": observers,
+    "devices": device_list,
+    "links": links,
+    "stats": {
+      "observers": len(observers),
+      "devices": len(device_list),
+      "links": len(links),
+      "responded": responded,
+      "unresolved": unresolved,
+      "last_update": last_update,
+    },
   }
 
 
@@ -1066,7 +1319,7 @@ def _append_loaded_traffic_event(
 
 def _persist_traffic_event(packet_event: Dict[str, Any]) -> None:
   global last_packet_purge
-  if packet_db is None:
+  if packet_db is None or PACKET_RETENTION_SECONDS <= 0:
     return
   now = float(packet_event.get("ts") or time.time())
   with packet_db_lock:
@@ -1096,7 +1349,7 @@ def _persist_traffic_event(packet_event: Dict[str, Any]) -> None:
 
 
 def _backfill_traffic_events_from_packets() -> None:
-  if packet_db is None:
+  if packet_db is None or PACKET_RETENTION_SECONDS <= 0:
     return
   with packet_db_lock:
     rows = packet_db.execute(
@@ -1155,10 +1408,10 @@ def _backfill_traffic_events_from_packets() -> None:
 
 
 def _load_traffic_events() -> None:
-  if packet_db is None:
-    return
   with state_lock:
     _reset_traffic_state()
+  if packet_db is None or PACKET_RETENTION_SECONDS <= 0:
+    return
 
   with packet_db_lock:
     traffic_count = packet_db.execute(
@@ -1869,6 +2122,7 @@ def _build_snapshot() -> Dict[str, Any]:
     "sys_topics": sys_copy,
     "stats": _build_stats(now),
     "traffic": _build_traffic(now),
+    "neighbors": _build_neighbors_topology(),
   }
 
 
@@ -1885,9 +2139,102 @@ def _has_ws_clients() -> bool:
     return ws_client_count > 0
 
 
+def _ensure_neighbor_snapshots_table() -> None:
+  if packet_db is None:
+    return
+  with packet_db_lock:
+    packet_db.execute(
+      """
+      CREATE TABLE IF NOT EXISTS neighbor_snapshots (
+        observer_id TEXT PRIMARY KEY,
+        received_at REAL NOT NULL,
+        topic TEXT NOT NULL,
+        payload_json TEXT NOT NULL
+      )
+      """
+    )
+    packet_db.commit()
+
+
+def _store_neighbor_snapshot(snapshot: Dict[str, Any]) -> bool:
+  observer_id = snapshot["observer_id"]
+  with state_lock:
+    existing = neighbor_snapshots.get(observer_id)
+    existing_time = (
+      float(existing.get("reported_at") or existing.get("received_at") or 0.0)
+      if existing
+      else 0.0
+    )
+    snapshot_time = float(snapshot.get("reported_at") or snapshot.get("received_at") or 0.0)
+    if existing_time > snapshot_time:
+      return False
+    neighbor_snapshots[observer_id] = snapshot
+  if packet_db is None:
+    return True
+  payload_json = json.dumps(snapshot, ensure_ascii=True, separators=(",", ":"))
+  with packet_db_lock:
+    packet_db.execute(
+      """
+      INSERT INTO neighbor_snapshots (observer_id, received_at, topic, payload_json)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(observer_id) DO UPDATE SET
+        received_at = excluded.received_at,
+        topic = excluded.topic,
+        payload_json = excluded.payload_json
+      """,
+      (
+        observer_id,
+        float(snapshot.get("received_at") or 0.0),
+        snapshot.get("topic") or "",
+        payload_json,
+      ),
+    )
+    packet_db.commit()
+  return True
+
+
+def _delete_neighbor_snapshot(observer_id: str) -> bool:
+  with state_lock:
+    removed = neighbor_snapshots.pop(observer_id, None) is not None
+  if packet_db is not None:
+    with packet_db_lock:
+      cursor = packet_db.execute(
+        "DELETE FROM neighbor_snapshots WHERE observer_id = ?",
+        (observer_id,),
+      )
+      packet_db.commit()
+      removed = removed or cursor.rowcount > 0
+  return removed
+
+
+def _load_neighbor_snapshots() -> None:
+  if packet_db is None:
+    return
+  with packet_db_lock:
+    rows = packet_db.execute(
+      "SELECT observer_id, payload_json FROM neighbor_snapshots ORDER BY received_at DESC"
+    ).fetchall()
+  loaded = {}
+  for observer_id, payload_json in rows:
+    normalized_id = _normalize_pubkey(observer_id)
+    if not normalized_id:
+      continue
+    try:
+      snapshot = json.loads(payload_json)
+    except (TypeError, json.JSONDecodeError):
+      continue
+    if not isinstance(snapshot, dict) or snapshot.get("observer_id") != normalized_id:
+      continue
+    if not isinstance(snapshot.get("neighbors"), list):
+      continue
+    loaded[normalized_id] = snapshot
+  with state_lock:
+    neighbor_snapshots.update(loaded)
+
+
 def _init_packet_db() -> None:
   global packet_db
-  if not PACKET_DB_PATH or PACKET_RETENTION_SECONDS <= 0:
+  if not PACKET_DB_PATH:
     return
   os.makedirs(os.path.dirname(PACKET_DB_PATH), exist_ok=True)
   packet_db = sqlite3.connect(PACKET_DB_PATH, check_same_thread=False)
@@ -1968,10 +2315,11 @@ def _init_packet_db() -> None:
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_batteryinfo_events_dedupe ON batteryinfo_events (dedupe_key)"
   )
   packet_db.commit()
+  _ensure_neighbor_snapshots_table()
 
 
 def _load_name_cache() -> None:
-  if packet_db is None:
+  if packet_db is None or PACKET_RETENTION_SECONDS <= 0:
     return
   with packet_db_lock:
     rows = packet_db.execute(
@@ -2001,7 +2349,7 @@ def _close_packet_db() -> None:
 
 def _save_packet(topic: str, payload_info: Dict[str, Any], node: NodeState) -> None:
   global last_packet_purge
-  if packet_db is None:
+  if packet_db is None or PACKET_RETENTION_SECONDS <= 0:
     return
   now = time.time()
   payload_text = payload_info.get("text") or ""
@@ -2035,7 +2383,7 @@ def _save_packet(topic: str, payload_info: Dict[str, Any], node: NodeState) -> N
 
 
 def _fetch_packets(limit: int, node_id: Optional[str]) -> Dict[str, Any]:
-  if packet_db is None:
+  if packet_db is None or PACKET_RETENTION_SECONDS <= 0:
     return {"enabled": False, "packets": []}
   limit = max(1, min(limit, 1000))
   with packet_db_lock:
@@ -2171,6 +2519,7 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
   payload_info = _decode_payload(msg.payload)
   topic = msg.topic
   should_broadcast = _has_ws_clients()
+  now = time.time()
 
   if _is_sys_topic(topic):
     sys_value = _update_sys(topic, payload_info)
@@ -2188,10 +2537,24 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
   if _should_ignore_retained_message(topic, msg):
     return
 
+  tombstone_observer_id = _neighbors_observer_from_topic(topic)
+  if tombstone_observer_id and getattr(msg, "retain", False) and not msg.payload:
+    neighbor_updated = _delete_neighbor_snapshot(tombstone_observer_id)
+    if should_broadcast and neighbor_updated:
+      _queue_broadcast(
+        {
+          "type": "neighbors_update",
+          "neighbors": _build_neighbors_topology(),
+        }
+      )
+    return
+
+  neighbor_snapshot = _normalize_neighbors_snapshot(topic, payload_info.get("json"), now)
+  neighbor_updated = bool(neighbor_snapshot and _store_neighbor_snapshot(neighbor_snapshot))
+
   packet_event = _extract_packet_event(topic, payload_info)
   node = _update_node(topic, payload_info)
   _record_message()
-  now = time.time()
   _save_packet(topic, payload_info, node)
   unique_packet_event = _record_traffic_event(packet_event)
   if BATTERYINFO_ENABLED:
@@ -2214,6 +2577,13 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
         "type": "traffic_update",
         "event": unique_packet_event,
         "traffic": traffic_summary,
+      }
+    )
+  if neighbor_updated:
+    _queue_broadcast(
+      {
+        "type": "neighbors_update",
+        "neighbors": _build_neighbors_topology(),
       }
     )
 
@@ -2302,6 +2672,7 @@ async def on_startup():
   role_overrides = _load_role_overrides()
   _init_packet_db()
   _load_name_cache()
+  _load_neighbor_snapshots()
   _load_traffic_events()
   _load_batteryinfo_events()
   start_mqtt()
@@ -2330,6 +2701,16 @@ async def index(request: Request) -> HTMLResponse:
 @app.get("/traffic")
 async def traffic(request: Request) -> HTMLResponse:
   return HTMLResponse(_render_traffic_html(str(request.url)))
+
+
+@app.get("/neighbors")
+async def neighbors(request: Request) -> HTMLResponse:
+  return HTMLResponse(_render_neighbors_html(str(request.url)))
+
+
+@app.get("/neighbors/data")
+async def neighbors_data() -> JSONResponse:
+  return JSONResponse(_build_neighbors_topology())
 
 
 @app.get("/batteryinfo")

@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__DASH_TITLE__</title>
+    <meta name="description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="__DASH_TITLE__" />
+    <meta property="og:description" content="__DASH_DESCRIPTION__" />
+    <meta property="og:url" content="__DASH_URL__" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="__DASH_TITLE__" />
+    <meta name="twitter:description" content="__DASH_DESCRIPTION__" />
+    __DASH_FAVICON_TAGS__
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #09111b;
+        --bg-soft: #0d1723;
+        --panel: #111d2a;
+        --panel-strong: #172638;
+        --ink: #edf4fb;
+        --muted: #94a4b7;
+        --line: rgba(196, 218, 240, 0.12);
+        --accent: #54a8ff;
+        --accent-soft: rgba(84, 168, 255, 0.18);
+        --good: #52d6b2;
+        --warn: #ffbd68;
+        --bad: #ff7468;
+        --shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+      }
+
+      [data-theme="light"] {
+        color-scheme: light;
+        --bg: #eef3f8;
+        --bg-soft: #f7f9fc;
+        --panel: #ffffff;
+        --panel-strong: #e8eff7;
+        --ink: #172333;
+        --muted: #5e7084;
+        --line: rgba(30, 55, 82, 0.14);
+        --accent: #176bd1;
+        --accent-soft: rgba(23, 107, 209, 0.12);
+        --good: #12876d;
+        --warn: #b66b09;
+        --bad: #c8433b;
+        --shadow: 0 18px 45px rgba(25, 50, 76, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 5%, rgba(84, 168, 255, 0.13), transparent 34rem),
+          radial-gradient(circle at 90% 20%, rgba(82, 214, 178, 0.1), transparent 30rem),
+          var(--bg);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button, input, select { font: inherit; }
+      .app { width: min(1480px, 100%); margin: 0 auto; padding: 30px 34px 46px; }
+      header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+      h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.55rem); letter-spacing: -0.045em; }
+      .subtitle { margin: 7px 0 0; color: var(--muted); max-width: 68ch; line-height: 1.5; }
+      .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
+      .nav-link, .github-link, .theme-toggle, .status-pill {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 9px 13px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+        color: var(--ink);
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        font-size: 0.69rem;
+        font-weight: 750;
+      }
+      .nav-link[data-active="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+      .nav-link:hover, .github-link:hover { color: var(--accent); border-color: var(--accent); }
+      .theme-toggle { cursor: pointer; }
+      .status-pill { gap: 8px; color: var(--muted); }
+      .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+      .status-pill.connected .status-dot { background: var(--good); box-shadow: 0 0 0 4px rgba(82, 214, 178, 0.12); }
+
+      .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
+      .card, .panel { border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 94%, transparent); box-shadow: var(--shadow); }
+      .card { border-radius: 16px; padding: 16px 17px; min-width: 0; }
+      .card-label { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; font-weight: 750; }
+      .card-value { margin-top: 7px; font-size: 1.75rem; font-weight: 780; letter-spacing: -0.04em; }
+      .card-sub { color: var(--muted); font-size: 0.78rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+      .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+      .toolbar input, .toolbar select {
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: var(--panel);
+        color: var(--ink);
+        padding: 9px 12px;
+        outline: none;
+      }
+      .toolbar input { flex: 1 1 360px; min-width: 160px; }
+      .toolbar select { flex: 0 0 180px; }
+      .toolbar input:focus, .toolbar select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+      .topology-grid { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.75fr); gap: 16px; margin-bottom: 16px; }
+      .panel { border-radius: 18px; padding: 17px; min-width: 0; }
+      .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+      .panel h2 { margin: 0; font-size: 1rem; letter-spacing: -0.015em; }
+      .panel-sub { margin: 4px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.45; }
+      .legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; color: var(--muted); font-size: 0.7rem; }
+      .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+      .legend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+      .legend-dot.observer { background: var(--accent); }
+      .legend-line { width: 18px; height: 2px; background: var(--warn); }
+
+      .graph-shell { position: relative; min-height: 520px; border-radius: 14px; background: var(--bg-soft); border: 1px solid var(--line); overflow: hidden; }
+      #topology-graph { display: block; width: 100%; height: 520px; }
+      .graph-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); text-align: center; padding: 30px; pointer-events: none; }
+      .graph-empty[hidden] { display: none; }
+      .graph-edge { stroke-linecap: round; cursor: pointer; transition: opacity 120ms ease, stroke-width 120ms ease; }
+      .graph-edge:hover, .graph-edge.selected { opacity: 1 !important; stroke-width: 4 !important; }
+      .graph-node { cursor: pointer; }
+      .graph-node circle { stroke: var(--bg); stroke-width: 3; }
+      .graph-node.selected circle { stroke: var(--warn); stroke-width: 4; }
+      .graph-node text { fill: var(--ink); font-size: 11px; font-weight: 700; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+
+      .details { display: grid; gap: 10px; }
+      .detail { padding: 11px 12px; border-radius: 11px; background: var(--bg-soft); border: 1px solid var(--line); min-width: 0; }
+      .detail-label { display: block; color: var(--muted); font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+      .detail-value { overflow-wrap: anywhere; font-size: 0.88rem; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.78rem; }
+      .scope-list { display: flex; flex-wrap: wrap; gap: 5px; }
+      .scope { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--muted); font-size: 0.68rem; }
+      .status { display: inline-flex; border-radius: 999px; padding: 4px 8px; font-size: 0.68rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.06em; background: rgba(82, 214, 178, 0.12); color: var(--good); }
+      .status.timeout, .status.send_failed, .status.unknown { color: var(--warn); background: rgba(255, 189, 104, 0.12); }
+
+      .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 13px; }
+      table { width: 100%; border-collapse: collapse; min-width: 790px; }
+      th { position: sticky; top: 0; z-index: 1; background: var(--panel-strong); color: var(--muted); text-align: left; text-transform: uppercase; letter-spacing: 0.075em; font-size: 0.66rem; }
+      th, td { padding: 11px 12px; border-bottom: 1px solid var(--line); }
+      td { font-size: 0.8rem; }
+      tbody tr { cursor: pointer; transition: background 100ms ease; }
+      tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
+      tbody tr:last-child td { border-bottom: 0; }
+      .node-primary { font-weight: 700; }
+      .node-secondary { color: var(--muted); font-size: 0.7rem; margin-top: 2px; }
+      .empty-row { text-align: center; color: var(--muted); padding: 26px; }
+      .footer-note { margin: 16px 2px 0; color: var(--muted); font-size: 0.75rem; }
+      .footer-note a { color: var(--accent); text-decoration: none; font-weight: 700; }
+
+      @media (max-width: 1000px) {
+        header { flex-direction: column; }
+        .header-actions { justify-content: flex-start; }
+        .topology-grid { grid-template-columns: 1fr; }
+        .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .graph-shell, #topology-graph { min-height: 460px; height: 460px; }
+      }
+      @media (max-width: 640px) {
+        .app { padding: 22px 16px 34px; }
+        .metrics { grid-template-columns: 1fr 1fr; }
+        .toolbar { align-items: stretch; flex-direction: column; }
+        .toolbar input, .toolbar select { flex: 1 1 auto; width: 100%; }
+        .panel-head { flex-direction: column; }
+        .legend { justify-content: flex-start; }
+        .graph-shell, #topology-graph { min-height: 400px; height: 400px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <div>
+          <h1>Neighbor Topology</h1>
+          <p class="subtitle">Zero-hop repeater relationships reported by MQTT observers, including signal quality, last-heard age, discovery status, and flood scopes.</p>
+        </div>
+        <div class="header-actions">
+          <a class="nav-link" href="/">Dashboard</a>
+          <a class="nav-link" href="/neighbors" data-active="true">Neighbors</a>
+          <a class="nav-link" href="/traffic">Traffic</a>
+          __BATTERY_NAV_LINK__
+          __DASH_EXTERNAL_LINK__
+          <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
+          <div class="status-pill" id="status-pill"><span class="status-dot"></span><span id="status-text">Disconnected</span></div>
+        </div>
+      </header>
+
+      <section class="metrics" aria-label="Topology summary">
+        <div class="card"><div class="card-label">Observers</div><div class="card-value" id="metric-observers">0</div><div class="card-sub">Reporting neighbor tables</div></div>
+        <div class="card"><div class="card-label">Devices</div><div class="card-value" id="metric-devices">0</div><div class="card-sub">Unique public keys</div></div>
+        <div class="card"><div class="card-label">Links</div><div class="card-value" id="metric-links">0</div><div class="card-sub" id="metric-status">0 responded · 0 unresolved</div></div>
+        <div class="card"><div class="card-label">Latest Snapshot</div><div class="card-value" id="metric-freshness">--</div><div class="card-sub" id="metric-clock">Waiting for neighbor data</div></div>
+      </section>
+
+      <div class="toolbar">
+        <input id="topology-filter" type="search" autocomplete="off" placeholder="Filter by observer, neighbor key, name, or scope" />
+        <select id="status-filter" aria-label="Discovery status">
+          <option value="all">All discovery states</option>
+          <option value="responded">Responded</option>
+          <option value="timeout">Timeout</option>
+          <option value="send_failed">Send failed</option>
+          <option value="unknown">Unknown</option>
+        </select>
+      </div>
+
+      <section class="topology-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Live Graph</h2><p class="panel-sub" id="graph-summary">Waiting for MQTT neighbor snapshots.</p></div>
+            <div class="legend" aria-label="Graph legend">
+              <span class="legend-item"><span class="legend-dot observer"></span>Observer</span>
+              <span class="legend-item"><span class="legend-dot"></span>Neighbor</span>
+              <span class="legend-item"><span class="legend-line"></span>Unresolved scope query</span>
+            </div>
+          </div>
+          <div class="graph-shell">
+            <svg id="topology-graph" viewBox="0 0 900 520" role="img" aria-label="Observer and neighbor topology graph"></svg>
+            <div class="graph-empty" id="graph-empty">No neighbor snapshots received yet.</div>
+          </div>
+        </div>
+
+        <aside class="panel">
+          <div class="panel-head"><div><h2>Topology Detail</h2><p class="panel-sub">Select a graph node, link, or table row.</p></div></div>
+          <div class="details" id="topology-detail"><div class="detail"><span class="detail-label">Selection</span><div class="detail-value">Nothing selected</div></div></div>
+        </aside>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2>Neighbor Links</h2><p class="panel-sub" id="table-summary">All current observer reports.</p></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Observer</th><th>Neighbor</th><th>SNR</th><th>Last Heard</th><th>Scopes</th><th>Discovery</th></tr></thead>
+            <tbody id="neighbor-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="footer-note">Built from the latest <span class="mono">*/neighbors</span> MQTT document reported by each observer. Snapshot age and RF last-heard age are shown separately. <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a></p>
+    </main>
+
+    <script>
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const state = { topology: { observers: [], devices: [], links: [], stats: {} }, broker: {}, selected: null };
+      const elements = {
+        graph: document.getElementById("topology-graph"),
+        graphEmpty: document.getElementById("graph-empty"),
+        graphSummary: document.getElementById("graph-summary"),
+        table: document.getElementById("neighbor-table"),
+        tableSummary: document.getElementById("table-summary"),
+        detail: document.getElementById("topology-detail"),
+        query: document.getElementById("topology-filter"),
+        statusFilter: document.getElementById("status-filter"),
+        statusPill: document.getElementById("status-pill"),
+        statusText: document.getElementById("status-text"),
+        themeToggle: document.getElementById("theme-toggle"),
+        observers: document.getElementById("metric-observers"),
+        devices: document.getElementById("metric-devices"),
+        links: document.getElementById("metric-links"),
+        status: document.getElementById("metric-status"),
+        freshness: document.getElementById("metric-freshness"),
+        clock: document.getElementById("metric-clock"),
+      };
+
+      function shortKey(value) { return value ? `${value.slice(0, 8)}…${value.slice(-4)}` : "--"; }
+      function formatAge(timestamp) {
+        if (!timestamp) return "--";
+        const delta = Math.max(0, Math.floor(Date.now() / 1000 - Number(timestamp)));
+        if (delta < 60) return `${delta}s`;
+        if (delta < 3600) return `${Math.floor(delta / 60)}m ${delta % 60}s`;
+        if (delta < 86400) return `${Math.floor(delta / 3600)}h ${Math.floor((delta % 3600) / 60)}m`;
+        return `${Math.floor(delta / 86400)}d ${Math.floor((delta % 86400) / 3600)}h`;
+      }
+      function formatClock(timestamp) { return timestamp ? new Date(Number(timestamp) * 1000).toLocaleString() : "--"; }
+      function displayName(deviceId) {
+        const device = (state.topology.devices || []).find((item) => item.device_id === deviceId);
+        return device && device.name ? device.name : shortKey(deviceId);
+      }
+      function observerName(observerId) {
+        const observer = (state.topology.observers || []).find((item) => item.observer_id === observerId);
+        return observer && observer.origin ? observer.origin : displayName(observerId);
+      }
+      function selectionKey(link) { return `${link.observer_id}:${link.neighbor_id}`; }
+      function linkColor(link) {
+        if (link.status !== "responded") return "var(--warn)";
+        const snr = Number(link.snr);
+        if (!Number.isFinite(snr)) return "var(--muted)";
+        if (snr >= 6) return "var(--good)";
+        if (snr >= 0) return "var(--accent)";
+        if (snr >= -6) return "var(--warn)";
+        return "var(--bad)";
+      }
+      function filteredLinks() {
+        const query = elements.query.value.trim().toLowerCase();
+        const status = elements.statusFilter.value;
+        return (state.topology.links || []).filter((link) => {
+          if (status !== "all" && link.status !== status) return false;
+          if (!query) return true;
+          const haystack = [
+            link.observer_id,
+            observerName(link.observer_id),
+            link.neighbor_id,
+            displayName(link.neighbor_id),
+            ...(link.scopes || []),
+            link.status,
+          ].join(" ").toLowerCase();
+          return haystack.includes(query);
+        });
+      }
+      function createSvg(tag, attributes = {}) {
+        const element = document.createElementNS(SVG_NS, tag);
+        Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, String(value)));
+        return element;
+      }
+      // layout-geometry:start
+      function calculatePositions(deviceIds, observerIds) {
+        const positions = new Map();
+        const observers = deviceIds.filter((id) => observerIds.has(id));
+        const neighbors = deviceIds.filter((id) => !observerIds.has(id));
+        if (observers.length === 1) {
+          positions.set(observers[0], { x: 450, y: 260 });
+        } else {
+          observers.forEach((id, index) => {
+            const angle = -Math.PI / 2 + (index * Math.PI * 2) / Math.max(observers.length, 1);
+            positions.set(id, { x: 450 + Math.cos(angle) * 132, y: 260 + Math.sin(angle) * 132 });
+          });
+        }
+        neighbors.forEach((id, index) => {
+          const angle = -Math.PI / 2 + (index * Math.PI * 2) / Math.max(neighbors.length, 1);
+          const ring = neighbors.length > 18 && index % 2 ? 225 : 200;
+          positions.set(id, { x: 450 + Math.cos(angle) * ring * 1.72, y: 260 + Math.sin(angle) * ring });
+        });
+        return positions;
+      }
+
+      function pointToSegment(point, start, end) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const lengthSquared = dx * dx + dy * dy;
+        const projection = lengthSquared
+          ? Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared))
+          : 0;
+        const closest = {
+          x: start.x + projection * dx,
+          y: start.y + projection * dy,
+        };
+        const offset = { x: point.x - closest.x, y: point.y - closest.y };
+        return { offset, distance: Math.hypot(offset.x, offset.y), dx, dy };
+      }
+
+      function distanceToSegment(point, start, end) {
+        return pointToSegment(point, start, end).distance;
+      }
+
+      function separateNodesFromEdges(deviceIds, positions, links) {
+        const minimumDistance = 84;
+        for (let pass = 0; pass < 12; pass += 1) {
+          let moved = false;
+          links.forEach((link, linkIndex) => {
+            const start = positions.get(link.observer_id);
+            const end = positions.get(link.neighbor_id);
+            if (!start || !end) return;
+            deviceIds.forEach((deviceId, deviceIndex) => {
+              if (deviceId === link.observer_id || deviceId === link.neighbor_id) return;
+              const position = positions.get(deviceId);
+              const geometry = pointToSegment(position, start, end);
+              if (geometry.distance >= minimumDistance) return;
+              let directionX = geometry.offset.x;
+              let directionY = geometry.offset.y;
+              if (geometry.distance < 0.001) {
+                const length = Math.hypot(geometry.dx, geometry.dy) || 1;
+                const side = (deviceIndex + linkIndex) % 2 ? 1 : -1;
+                directionX = (-geometry.dy / length) * side;
+                directionY = (geometry.dx / length) * side;
+              } else {
+                directionX /= geometry.distance;
+                directionY /= geometry.distance;
+              }
+              const shift = minimumDistance - geometry.distance + 2;
+              position.x = Math.max(48, Math.min(852, position.x + directionX * shift));
+              position.y = Math.max(48, Math.min(472, position.y + directionY * shift));
+              moved = true;
+            });
+          });
+          if (!moved) break;
+        }
+        return positions;
+      }
+      // layout-geometry:end
+      function selectLink(link) { state.selected = { type: "link", key: selectionKey(link) }; renderAll(); }
+      function selectDevice(deviceId) { state.selected = { type: "device", key: deviceId }; renderAll(); }
+
+      function renderGraph(links) {
+        elements.graph.replaceChildren();
+        const observerIds = new Set((state.topology.observers || []).map((item) => item.observer_id));
+        const visibleDeviceIds = new Set(links.flatMap((link) => [link.observer_id, link.neighbor_id]));
+        const query = elements.query.value.trim().toLowerCase();
+        if (elements.statusFilter.value === "all") {
+          (state.topology.observers || []).forEach((observer) => {
+            const searchable = [
+              observer.observer_id,
+              observer.origin,
+              ...(observer.scopes || []),
+            ].join(" ").toLowerCase();
+            if (!query || searchable.includes(query)) visibleDeviceIds.add(observer.observer_id);
+          });
+        }
+        const deviceIds = Array.from(visibleDeviceIds).sort();
+        const positions = calculatePositions(deviceIds, observerIds);
+        separateNodesFromEdges(deviceIds, positions, links);
+        elements.graphEmpty.hidden = deviceIds.length > 0;
+        elements.graphSummary.textContent = deviceIds.length
+          ? `${links.length} visible link${links.length === 1 ? "" : "s"} across ${deviceIds.length} device${deviceIds.length === 1 ? "" : "s"}.`
+          : "No links match the current filter.";
+
+        links.forEach((link) => {
+          const start = positions.get(link.observer_id);
+          const end = positions.get(link.neighbor_id);
+          if (!start || !end) return;
+          const line = createSvg("line", {
+            x1: start.x, y1: start.y, x2: end.x, y2: end.y,
+            stroke: linkColor(link),
+            "stroke-width": Math.max(1.5, Math.min(5, 2.2 + (Number(link.snr) || 0) / 8)),
+            opacity: link.status === "responded" ? 0.72 : 0.5,
+            class: `graph-edge${state.selected && state.selected.type === "link" && state.selected.key === selectionKey(link) ? " selected" : ""}`,
+          });
+          line.addEventListener("click", () => selectLink(link));
+          const title = createSvg("title");
+          title.textContent = `${observerName(link.observer_id)} → ${displayName(link.neighbor_id)} · SNR ${link.snr ?? "--"} · ${link.status}`;
+          line.appendChild(title);
+          elements.graph.appendChild(line);
+        });
+
+        deviceIds.forEach((deviceId) => {
+          const position = positions.get(deviceId);
+          const observer = observerIds.has(deviceId);
+          const selected = state.selected && state.selected.type === "device" && state.selected.key === deviceId;
+          const group = createSvg("g", { class: `graph-node${selected ? " selected" : ""}`, transform: `translate(${position.x} ${position.y})` });
+          const circle = createSvg("circle", { r: observer ? 16 : 12, fill: observer ? "var(--accent)" : "var(--good)" });
+          const label = createSvg("text", { x: 0, y: observer ? 32 : 27, "text-anchor": "middle" });
+          const name = displayName(deviceId);
+          label.textContent = name.length > 22 ? `${name.slice(0, 20)}…` : name;
+          const title = createSvg("title");
+          title.textContent = `${name}\n${deviceId}`;
+          group.append(circle, label, title);
+          group.addEventListener("click", () => selectDevice(deviceId));
+          elements.graph.appendChild(group);
+        });
+      }
+
+      function appendTextCell(row, primary, secondary = "", className = "") {
+        const cell = document.createElement("td");
+        if (className) cell.className = className;
+        const main = document.createElement("div");
+        main.className = "node-primary";
+        main.textContent = primary;
+        cell.appendChild(main);
+        if (secondary) {
+          const sub = document.createElement("div");
+          sub.className = "node-secondary mono";
+          sub.textContent = secondary;
+          cell.appendChild(sub);
+        }
+        row.appendChild(cell);
+      }
+      function renderTable(links) {
+        elements.table.replaceChildren();
+        elements.tableSummary.textContent = `${links.length} visible of ${(state.topology.links || []).length} current links.`;
+        if (!links.length) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 6;
+          cell.className = "empty-row";
+          cell.textContent = (state.topology.links || []).length
+            ? "No neighbor links match this filter."
+            : (state.topology.observers || []).length
+              ? "Observers have reported no current neighbor links."
+              : "No neighbor snapshots received yet.";
+          row.appendChild(cell);
+          elements.table.appendChild(row);
+          return;
+        }
+        links.forEach((link) => {
+          const row = document.createElement("tr");
+          if (state.selected && state.selected.type === "link" && state.selected.key === selectionKey(link)) row.classList.add("selected");
+          row.addEventListener("click", () => selectLink(link));
+          appendTextCell(row, observerName(link.observer_id), shortKey(link.observer_id));
+          appendTextCell(row, displayName(link.neighbor_id), shortKey(link.neighbor_id));
+          appendTextCell(row, link.snr === null || link.snr === undefined ? "--" : `${link.snr} dB`);
+          appendTextCell(row, formatAge(link.heard_at), `snapshot ${formatAge(link.reported_at)} ago`);
+          appendTextCell(row, (link.scopes || []).join(", ") || "--");
+          const statusCell = document.createElement("td");
+          const badge = document.createElement("span");
+          badge.className = `status ${link.status}`;
+          badge.textContent = link.status.replace("_", " ");
+          statusCell.appendChild(badge);
+          row.appendChild(statusCell);
+          elements.table.appendChild(row);
+        });
+      }
+      function detailBlock(label, value, mono = false) {
+        const block = document.createElement("div");
+        block.className = "detail";
+        const title = document.createElement("span");
+        title.className = "detail-label";
+        title.textContent = label;
+        const content = document.createElement("div");
+        content.className = `detail-value${mono ? " mono" : ""}`;
+        content.textContent = value;
+        block.append(title, content);
+        return block;
+      }
+      function scopeBlock(label, scopes) {
+        const block = document.createElement("div");
+        block.className = "detail";
+        const title = document.createElement("span");
+        title.className = "detail-label";
+        title.textContent = label;
+        const list = document.createElement("div");
+        list.className = "scope-list";
+        (scopes && scopes.length ? scopes : ["None reported"]).forEach((scope) => {
+          const item = document.createElement("span");
+          item.className = "scope";
+          item.textContent = scope;
+          list.appendChild(item);
+        });
+        block.append(title, list);
+        return block;
+      }
+      function renderDetail() {
+        elements.detail.replaceChildren();
+        if (!state.selected) {
+          elements.detail.appendChild(detailBlock("Selection", "Select a node or neighbor link to inspect it."));
+          return;
+        }
+        if (state.selected.type === "link") {
+          const link = (state.topology.links || []).find((item) => selectionKey(item) === state.selected.key);
+          if (!link) { state.selected = null; renderDetail(); return; }
+          elements.detail.append(
+            detailBlock("Observer", observerName(link.observer_id)),
+            detailBlock("Observer key", link.observer_id, true),
+            detailBlock("Neighbor", displayName(link.neighbor_id)),
+            detailBlock("Neighbor key", link.neighbor_id, true),
+            detailBlock("Signal", link.snr === null || link.snr === undefined ? "Not reported" : `${link.snr} dB SNR`),
+            detailBlock("Discovery", link.status.replace("_", " ")),
+            detailBlock("Last heard", `${formatAge(link.heard_at)} ago · ${formatClock(link.heard_at)}`),
+            detailBlock("Snapshot reported", `${formatAge(link.reported_at)} ago · ${formatClock(link.reported_at)}`),
+            detailBlock("Broker received", `${formatAge(link.received_at)} ago · ${formatClock(link.received_at)}`),
+            scopeBlock("Flood scopes", link.scopes),
+          );
+          return;
+        }
+        const deviceId = state.selected.key;
+        const device = (state.topology.devices || []).find((item) => item.device_id === deviceId);
+        if (!device) { state.selected = null; renderDetail(); return; }
+        const connected = (state.topology.links || []).filter((link) => link.observer_id === deviceId || link.neighbor_id === deviceId);
+        const observer = (state.topology.observers || []).find((item) => item.observer_id === deviceId);
+        elements.detail.append(
+          detailBlock("Device", device.name || shortKey(deviceId)),
+          detailBlock("Public key", deviceId, true),
+          detailBlock("Type", device.kind),
+          detailBlock("Visible links", String(connected.length)),
+        );
+        if (observer) {
+          elements.detail.append(
+            detailBlock("Snapshot reported", `${formatAge(observer.reported_at)} ago · ${formatClock(observer.reported_at)}`),
+            detailBlock("Broker received", `${formatAge(observer.received_at)} ago · ${formatClock(observer.received_at)}`),
+            scopeBlock("Observer flood scopes", observer.scopes),
+          );
+        }
+      }
+      function renderMetrics() {
+        const stats = state.topology.stats || {};
+        elements.observers.textContent = stats.observers || 0;
+        elements.devices.textContent = stats.devices || 0;
+        elements.links.textContent = stats.links || 0;
+        elements.status.textContent = `${stats.responded || 0} responded · ${stats.unresolved || 0} unresolved`;
+        elements.freshness.textContent = stats.last_update ? formatAge(stats.last_update) : "--";
+        elements.clock.textContent = stats.last_update ? `Reported ${formatClock(stats.last_update)}` : "Waiting for neighbor data";
+        const connected = Boolean(state.broker.connected);
+        elements.statusPill.classList.toggle("connected", connected);
+        elements.statusText.textContent = connected ? "Connected" : "Disconnected";
+      }
+      function renderAll() {
+        const links = filteredLinks();
+        renderMetrics();
+        renderGraph(links);
+        renderTable(links);
+        renderDetail();
+      }
+      function applyTopology(topology) {
+        state.topology = topology || { observers: [], devices: [], links: [], stats: {} };
+        if (state.selected && state.selected.type === "link" && !(state.topology.links || []).some((link) => selectionKey(link) === state.selected.key)) state.selected = null;
+        if (state.selected && state.selected.type === "device" && !(state.topology.devices || []).some((device) => device.device_id === state.selected.key)) state.selected = null;
+        renderAll();
+      }
+      function applyTheme(theme) {
+        if (theme === "light") {
+          document.documentElement.setAttribute("data-theme", "light");
+          elements.themeToggle.textContent = "Dark Mode";
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+          elements.themeToggle.textContent = "Light Mode";
+        }
+      }
+
+      elements.query.addEventListener("input", renderAll);
+      elements.statusFilter.addEventListener("change", renderAll);
+      elements.themeToggle.addEventListener("click", () => {
+        const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+        localStorage.setItem("theme", next);
+        applyTheme(next);
+      });
+      applyTheme(localStorage.getItem("theme") || "dark");
+
+      const scheme = location.protocol === "https:" ? "wss" : "ws";
+      let ws = null;
+      let reconnectTimer = null;
+      let reconnectDelay = 1000;
+      function connectWebSocket() {
+        clearTimeout(reconnectTimer);
+        ws = new WebSocket(`${scheme}://${location.host}/ws`);
+        ws.addEventListener("open", () => { reconnectDelay = 1000; });
+        ws.addEventListener("message", (event) => {
+          const message = JSON.parse(event.data);
+          if (message.type === "snapshot") {
+            state.broker = message.broker || {};
+            applyTopology(message.neighbors);
+          } else if (message.type === "neighbors_update") {
+            applyTopology(message.neighbors);
+          } else if (message.type === "broker_status") {
+            state.broker = message.broker || {};
+            renderMetrics();
+          }
+        });
+        ws.addEventListener("close", () => {
+          state.broker.connected = false;
+          renderMetrics();
+          reconnectTimer = setTimeout(connectWebSocket, reconnectDelay);
+          reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+        });
+        ws.addEventListener("error", () => ws.close());
+      }
+      window.addEventListener("beforeunload", () => clearTimeout(reconnectTimer));
+      connectWebSocket();
+      setInterval(() => { renderMetrics(); renderTable(filteredLinks()); renderDetail(); }, 15000);
+      renderAll();
+    </script>
+  </body>
+</html>

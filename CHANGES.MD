@@ -1,5 +1,13 @@
 # Changes
 
+## v1.3.4 - 2026-08-07
+- Added a live `/neighbors` topology page with an observer-to-neighbor graph, synchronized filters, link table, and selection details.
+- Added validated ingestion for MeshCore `*/neighbors` MQTT snapshots, including SNR, last-heard age, discovery status, and flood scopes.
+- Persisted the latest neighbor snapshot per observer in SQLite and exposed normalized topology data through `/neighbors/data` and websocket updates.
+- Anchored retained neighbor ages to firmware report timestamps, rejected topic/payload identity mismatches, ignored out-of-order reports, and removed topology state when retained topics are deleted.
+- Kept neighbor persistence active when packet history is disabled, kept zero-neighbor observers visible, and added bounded websocket reconnection for the live topology page.
+- Added collision-aware graph positioning so unrelated nodes and labels do not overlap neighbor edges.
+
 ## v1.3.3 - 2026-06-10
 - Synced the `dev` branch with `main` while preserving the self-hosted Docker publish runner workflow change.
 - Hardened the dashboard against CVE-2026-45323-style stored XSS by auditing untrusted MeshCore/MQTT render paths and escaping the remaining battery chart title HTML interpolation.
