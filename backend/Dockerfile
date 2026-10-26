@@ -3,7 +3,7 @@ WORKDIR /dependencies
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --fund=false
 
-FROM python:3.15.1-slim-trixie
+FROM python:3.16.0a1-slim-trixie
 WORKDIR /app
 
 # Both official stages use Debian trixie/glibc. Keep npm build-only;
