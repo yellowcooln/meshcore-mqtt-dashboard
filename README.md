@@ -3,11 +3,40 @@
 Live MQTT dashboard for node presence, retained traffic analysis, roles, and broker telemetry.
 
 - Release notes: [CHANGES.MD](./CHANGES.MD)
-- Current version: `v1.3.2`
+- Current version: `v1.3.4`
 - Preview: [https://mcmqttdashboard.bostonme.sh/](https://mcmqttdashboard.bostonme.sh/)
 - Docker image: `yellowcooln/meshcore-mqtt-dashboard`
 
 ![Dashboard preview](./docs/example.png)
+
+## Supported runtimes and maintenance
+
+The production image uses Python 3.15.1 and official Node 24.22.1 LTS on
+Debian trixie. Node runs the optional battery decoder; npm is used only in
+the build stage. `.nvmrc` and the backend's Node engine range keep local
+development and CI on the same supported Node line.
+
+Weekly Dependabot checks cover Python, backend npm packages, container bases
+and GitHub Actions. Node-major upgrades require a deliberate LTS migration;
+normal patch/minor and security updates remain eligible. Dependency PRs target
+`main`; automation starts when its configuration is merged there.
+
+CI runs the Python tests with the real Node decoder and builds the production
+image for a separate HTTP/authentication/WebSocket, encrypted-decoder and
+SQLite restart smoke check. You can run that smoke check locally without
+production credentials or data:
+
+```bash
+docker build -t mqtt-dashboard:verify ./backend
+docker run --rm --network none --tmpfs /data \
+  -v "$PWD/tests/runtime_smoke.py:/verification/runtime_smoke.py:ro" \
+  mqtt-dashboard:verify python /verification/runtime_smoke.py
+```
+
+Python 3.15 currently installs pure-Python PyYAML without its optional LibYAML
+accelerator. This does not affect the dashboard's existing JSON/SQLite data
+format. The decoder's existing CryptoJS dependency remains upstream-owned;
+unsupported transitive major overrides are not applied.
 
 ## Quick Start (Docker)
 
