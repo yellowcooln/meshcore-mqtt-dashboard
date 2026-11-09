@@ -1,12 +1,15 @@
 # Changes
 
-## v1.3.4 - 2026-10-25
+## v1.3.5 - 2026-11-09
 - Added a live `/neighbors` topology page with an observer-to-neighbor graph, synchronized filters, link table, and selection details.
 - Added validated ingestion for MeshCore `*/neighbors` MQTT snapshots, including SNR, last-heard age, discovery status, and flood scopes.
 - Persisted the latest neighbor snapshot per observer in SQLite and exposed normalized topology data through `/neighbors/data` and websocket updates.
 - Anchored retained neighbor ages to firmware report timestamps, rejected topic/payload identity mismatches, ignored out-of-order reports, and removed topology state when retained topics are deleted.
 - Kept neighbor persistence active when packet history is disabled, kept zero-neighbor observers visible, and added bounded websocket reconnection for the live topology page.
 - Added collision-aware graph positioning so unrelated nodes and labels do not overlap neighbor edges.
+- Updated pytest to `9.2.0` and verified the Neighbors feature alongside the current production runtime and dependencies.
+
+## v1.3.4 - 2026-10-25
 - Updated FastAPI and Uvicorn with fresh compatible Python dependencies while preserving the dashboard, retained traffic and battery telemetry interfaces.
 - Moved the container to Python 3.15.1 and official Node 24 LTS instead of the distribution's obsolete Node 20, with npm kept out of the production image.
 - Updated development cryptography to include the certificate-validation and PKCS#7 security fixes, and moved the current Starlette test client to HTTPX2.

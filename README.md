@@ -3,7 +3,7 @@
 Live MQTT dashboard for node presence, neighbor topology, retained traffic analysis, roles, and broker telemetry.
 
 - Release notes: [CHANGES.MD](./CHANGES.MD)
-- Current version: `v1.3.4`
+- Current version: `v1.3.5`
 - Preview: [https://mcmqttdashboard.bostonme.sh/](https://mcmqttdashboard.bostonme.sh/)
 - Docker image: `yellowcooln/meshcore-mqtt-dashboard`
 
