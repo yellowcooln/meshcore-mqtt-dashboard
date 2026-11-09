@@ -1,6 +1,12 @@
 # Changes
 
 ## v1.3.5 - 2026-11-09
+- Unified all pages with the Neighbors layout, shared light/dark themes, and responsive styling.
+- Replaced repeated full-history traffic scans with incremental summaries while preserving retained history, deduplication, and chart calculations.
+- Added lightweight initial dashboard and Neighbors streams for faster page loading without changing existing API snapshot behavior.
+- Batched live screen updates, reused node rows, and added stable name sorting with a most-recent option to prevent constant reshuffling.
+- Kept processing traffic in background tabs and refreshed the latest state on return without replaying intermediate redraws.
+- Simplified the README around setup, configuration, features, and API access.
 - Added a live `/neighbors` topology page with an observer-to-neighbor graph, synchronized filters, link table, and selection details.
 - Added validated ingestion for MeshCore `*/neighbors` MQTT snapshots, including SNR, last-heard age, discovery status, and flood scopes.
 - Persisted the latest neighbor snapshot per observer in SQLite and exposed normalized topology data through `/neighbors/data` and websocket updates.

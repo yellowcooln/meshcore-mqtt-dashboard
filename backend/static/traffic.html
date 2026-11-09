@@ -13,227 +13,7 @@
     <meta name="twitter:title" content="__DASH_TITLE__" />
     <meta name="twitter:description" content="__DASH_DESCRIPTION__" />
     __DASH_FAVICON_TAGS__
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
     <style>
-      :root {
-        --ink: #e7edf5;
-        --muted: #9aa7b6;
-        --panel: #0f1823;
-        --panel-strong: #172333;
-        --accent: #4aa3ff;
-        --accent-2: #5de2c5;
-        --accent-3: #ffbe6b;
-        --warn: #ff7b66;
-        --grid: rgba(255, 255, 255, 0.08);
-        --shadow: 0 26px 64px rgba(0, 0, 0, 0.38);
-        --bg-gradient:
-          radial-gradient(circle at 18% 15%, rgba(74, 163, 255, 0.22), transparent 60%),
-          radial-gradient(circle at 80% 10%, rgba(93, 226, 197, 0.18), transparent 55%),
-          radial-gradient(circle at 85% 80%, rgba(255, 190, 107, 0.12), transparent 50%),
-          linear-gradient(160deg, #0a1119 0%, #0f1a27 50%, #0b1320 100%);
-      }
-
-      [data-theme="light"] {
-        --ink: #1b2430;
-        --muted: #5a6a7a;
-        --panel: #f4f6fb;
-        --panel-strong: #e9eef6;
-        --accent: #1f6fe0;
-        --accent-2: #158a6a;
-        --accent-3: #f0b24a;
-        --warn: #d4584f;
-        --grid: rgba(24, 40, 64, 0.12);
-        --shadow: 0 18px 50px rgba(17, 34, 56, 0.12);
-        --bg-gradient:
-          radial-gradient(circle at 18% 15%, rgba(31, 111, 224, 0.18), transparent 60%),
-          radial-gradient(circle at 82% 12%, rgba(21, 138, 106, 0.1), transparent 50%),
-          radial-gradient(circle at 88% 75%, rgba(240, 178, 74, 0.12), transparent 50%),
-          linear-gradient(160deg, #f5f7fb 0%, #eef2f7 52%, #f8fafd 100%);
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        width: 100%;
-        min-height: 100%;
-      }
-
-      html {
-        background: var(--bg-gradient);
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
-        color: var(--ink);
-        overflow-x: hidden;
-        background: transparent;
-      }
-
-      .app {
-        position: relative;
-        padding: 36px 40px 48px;
-        width: 100%;
-        max-width: 1280px;
-        margin: 0 auto;
-        animation: fade-in 600ms ease-out;
-      }
-
-      header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
-        margin-bottom: 28px;
-      }
-
-      .header-actions {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-
-      .title-block h1 {
-        margin: 0;
-        font-size: 2.2rem;
-        letter-spacing: -0.02em;
-      }
-
-      .title-block p {
-        margin: 6px 0 0;
-        font-size: 0.95rem;
-        color: var(--muted);
-        max-width: 64ch;
-      }
-
-      .status-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 16px;
-        border-radius: 999px;
-        background: var(--panel);
-        box-shadow: var(--shadow);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 0.72rem;
-      }
-
-      .status-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--warn);
-        box-shadow: 0 0 0 4px rgba(255, 141, 109, 0.2);
-      }
-
-      .status-pill.connected .status-dot {
-        background: var(--accent-2);
-        box-shadow: 0 0 0 4px rgba(109, 214, 168, 0.2);
-      }
-
-      .theme-toggle,
-      .nav-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px 14px;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: var(--panel);
-        color: var(--ink);
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        text-decoration: none;
-        box-shadow: var(--shadow);
-        cursor: pointer;
-      }
-
-      .nav-link:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-
-      .footer-link {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
-      }
-
-      .footer-link:hover {
-        text-decoration: underline;
-      }
-
-      [data-theme="light"] .theme-toggle,
-      [data-theme="light"] .nav-link {
-        border-color: rgba(24, 40, 64, 0.2);
-      }
-
-      .metrics {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-        gap: 18px;
-        margin-bottom: 24px;
-        width: 100%;
-      }
-
-      .card,
-      .panel {
-        background: var(--panel);
-        border: 1px solid rgba(93, 75, 52, 0.08);
-        border-radius: 18px;
-        box-shadow: var(--shadow);
-        min-width: 0;
-        width: 100%;
-        animation: rise 540ms ease-out;
-      }
-
-      .card {
-        padding: 18px 18px 16px;
-      }
-
-      .panel {
-        border-radius: 22px;
-        padding: 18px 18px 20px;
-        overflow: hidden;
-      }
-
-      .card h3,
-      .panel h2 {
-        margin: 0 0 12px;
-      }
-
-      .card h3 {
-        font-size: 0.95rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-      }
-
-      .panel h2 {
-        font-size: 1.1rem;
-      }
-
-      .metric-value {
-        font-size: 1.9rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        overflow-wrap: anywhere;
-      }
 
       .metric-sub,
       .panel-sub,
@@ -251,17 +31,6 @@
         line-height: 1.55;
       }
 
-      .metric-sub {
-        margin-top: 8px;
-      }
-
-      .hero-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 18px;
-        margin-bottom: 24px;
-      }
-
       .layout {
         display: grid;
         grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr);
@@ -275,14 +44,6 @@
         display: grid;
         gap: 24px;
         align-content: start;
-      }
-
-      .panel-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        align-items: flex-start;
-        margin-bottom: 16px;
       }
 
       .panel-head-meta {
@@ -343,12 +104,6 @@
       .panel-head .mono {
         color: var(--muted);
         font-size: 0.82rem;
-      }
-
-      .mono {
-        font-family: "IBM Plex Mono", "Courier New", monospace;
-        overflow-wrap: anywhere;
-        word-break: break-word;
       }
 
       .chart-wrap {
@@ -619,11 +374,6 @@
         margin-top: 6px;
       }
 
-      .footer-note {
-        margin-top: 18px;
-        font-size: 0.8rem;
-      }
-
       @keyframes fade-in {
         from {
           opacity: 0;
@@ -651,63 +401,12 @@
           grid-template-columns: 1fr;
         }
 
-        header {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .panel-head {
-          flex-direction: column;
-        }
-
         .panel-head-meta {
           width: 100%;
         }
       }
 
-      @media (max-width: 720px) {
-        .app {
-          padding: 28px 22px 36px;
-          margin: 0;
-          max-width: 100%;
-        }
-
-        .title-block h1 {
-          font-size: 1.8rem;
-        }
-
-        .title-block p {
-          font-size: 0.88rem;
-        }
-
-        .header-actions {
-          width: 100%;
-          justify-content: flex-start;
-        }
-
-        .nav-link,
-        .theme-toggle,
-        .status-pill {
-          flex: 1 1 auto;
-          justify-content: center;
-        }
-      }
-
       @media (max-width: 640px) {
-        .app {
-          padding: 24px 18px 36px;
-          margin: 0;
-          max-width: 100%;
-        }
-
-        .hero-grid,
-        .metrics {
-          grid-template-columns: 1fr;
-        }
-
-        .panel-head {
-          flex-direction: column;
-        }
 
         .panel-head-meta {
           grid-template-columns: 1fr;
@@ -725,6 +424,7 @@
         }
       }
     </style>
+    <link rel="stylesheet" href="/static/dashboard.css" />
   </head>
   <body>
     <div class="app">
@@ -736,7 +436,9 @@
         <div class="header-actions">
           <a class="nav-link" href="/">Dashboard</a>
           <a class="nav-link" href="/neighbors">Neighbors</a>
+          <a class="nav-link" href="/traffic" data-active="true">Traffic</a>
           __BATTERY_NAV_LINK__
+          __DASH_EXTERNAL_LINK__
           <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
           <div class="status-pill" id="status-pill">
             <span class="status-dot"></span>
@@ -935,6 +637,7 @@
       </p>
     </div>
 
+    <script src="/static/live-ui.js"></script>
     <script>
       const ROUTE_KEYS = ["flood", "direct", "other"];
       const PAYLOAD_KEYS = ["trace", "advert", "message", "other"];
@@ -1195,7 +898,8 @@
       function applySnapshot(data) {
         state.broker = data.broker || {};
         state.traffic = normalizeTraffic(data.traffic);
-        renderAll();
+        renderScheduler.request("broker", "traffic", "charts");
+        renderScheduler.flush();
       }
 
       function appendTrafficEvent(currentHistory, traffic, event) {
@@ -1247,12 +951,12 @@
         const nextTraffic = normalizeTraffic(message.traffic, state.traffic.history);
         nextTraffic.history = appendTrafficEvent(state.traffic.history, nextTraffic, message.event || null);
         state.traffic = nextTraffic;
-        renderAll();
+        renderScheduler.request("traffic", "charts");
       }
 
       function applyBrokerUpdate(broker) {
         state.broker = broker || {};
-        renderAll();
+        renderScheduler.request("broker");
       }
 
       function renderBroker() {
@@ -1493,13 +1197,13 @@
         chartState[kind].bucketSeconds = bucketSeconds;
         if (!bars.length) {
           ctx.fillStyle = "rgba(154, 167, 182, 0.9)";
-          ctx.font = '500 14px "Space Grotesk"';
+          ctx.font = '500 14px system-ui, sans-serif';
           ctx.fillText("Waiting for packet telemetry", 18, height / 2);
           hideTooltip(tooltip);
           return;
         }
 
-        ctx.font = '500 11px "IBM Plex Mono"';
+        ctx.font = '500 11px ui-monospace, monospace';
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
         for (let guide = 0; guide <= 4; guide += 1) {
@@ -1663,11 +1367,11 @@
           if (!point) {
             stateEntry.activeBucket = null;
             hideTooltip(tooltip);
-            renderCharts();
+            renderScheduler.request("charts");
             return;
           }
           stateEntry.activeBucket = point.bucket;
-          renderCharts();
+          renderScheduler.request("charts");
           showTooltip(
             tooltip,
             canvas,
@@ -1682,7 +1386,7 @@
         canvas.addEventListener("mouseleave", () => {
           chartState[kind].activeBucket = null;
           hideTooltip(tooltip);
-          renderCharts();
+          renderScheduler.request("charts");
         });
       }
 
@@ -1709,16 +1413,18 @@
         );
       }
 
-      function renderAll() {
-        renderBroker();
-        renderMetrics();
-        renderInsights();
-        renderLegend(elements.routeLegend, ROUTE_KEYS, ROUTE_META, state.traffic.route_counts, state.traffic.route_rates);
-        renderLegend(elements.payloadLegend, PAYLOAD_KEYS, PAYLOAD_META, state.traffic.payload_counts, state.traffic.payload_rates);
-        renderTalkers();
-        renderBursts();
-        renderCharts();
-      }
+      const renderScheduler = window.DashboardUI.createRenderScheduler((sections) => {
+        if (sections.has("broker")) renderBroker();
+        if (sections.has("traffic") || sections.has("metrics")) renderMetrics();
+        if (sections.has("traffic")) {
+          renderInsights();
+          renderLegend(elements.routeLegend, ROUTE_KEYS, ROUTE_META, state.traffic.route_counts, state.traffic.route_rates);
+          renderLegend(elements.payloadLegend, PAYLOAD_KEYS, PAYLOAD_META, state.traffic.payload_counts, state.traffic.payload_rates);
+          renderTalkers();
+          renderBursts();
+        }
+        if (sections.has("charts")) renderCharts();
+      }, { intervalMs: 250 });
 
       function initTheme() {
         const storedTheme = localStorage.getItem("theme");
@@ -1734,7 +1440,7 @@
       function init() {
         initTheme();
         const scheme = location.protocol === "https:" ? "wss" : "ws";
-        const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+        const ws = new WebSocket(`${scheme}://${location.host}/ws?page=traffic`);
         ws.addEventListener("message", (event) => {
           const data = JSON.parse(event.data);
           if (data.type === "snapshot") {
@@ -1746,7 +1452,7 @@
           }
         });
 
-        window.addEventListener("resize", renderCharts);
+        window.addEventListener("resize", () => renderScheduler.request("charts"));
         bindChartHover("route", elements.routeChart, elements.routeTooltip, ROUTE_KEYS, ROUTE_META, "route_counts");
         bindChartHover("payload", elements.payloadChart, elements.payloadTooltip, PAYLOAD_KEYS, PAYLOAD_META, "payload_counts");
         elements.themeToggle.addEventListener("click", () => {
@@ -1760,11 +1466,11 @@
             localStorage.setItem("theme", "light");
             elements.themeToggle.textContent = "Dark Mode";
           }
-          renderCharts();
+          renderScheduler.request("charts");
         });
 
         setInterval(() => {
-          renderMetrics();
+          renderScheduler.request("metrics");
         }, 5000);
       }
 

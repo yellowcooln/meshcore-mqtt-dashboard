@@ -14,87 +14,8 @@
     <meta name="twitter:description" content="__DASH_DESCRIPTION__" />
     __DASH_FAVICON_TAGS__
     <style>
-      :root {
-        color-scheme: dark;
-        --bg: #09111b;
-        --bg-soft: #0d1723;
-        --panel: #111d2a;
-        --panel-strong: #172638;
-        --ink: #edf4fb;
-        --muted: #94a4b7;
-        --line: rgba(196, 218, 240, 0.12);
-        --accent: #54a8ff;
-        --accent-soft: rgba(84, 168, 255, 0.18);
-        --good: #52d6b2;
-        --warn: #ffbd68;
-        --bad: #ff7468;
-        --shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
-      }
-
-      [data-theme="light"] {
-        color-scheme: light;
-        --bg: #eef3f8;
-        --bg-soft: #f7f9fc;
-        --panel: #ffffff;
-        --panel-strong: #e8eff7;
-        --ink: #172333;
-        --muted: #5e7084;
-        --line: rgba(30, 55, 82, 0.14);
-        --accent: #176bd1;
-        --accent-soft: rgba(23, 107, 209, 0.12);
-        --good: #12876d;
-        --warn: #b66b09;
-        --bad: #c8433b;
-        --shadow: 0 18px 45px rgba(25, 50, 76, 0.12);
-      }
-
-      * { box-sizing: border-box; }
-      html, body { min-height: 100%; }
-      body {
-        margin: 0;
-        color: var(--ink);
-        background:
-          radial-gradient(circle at 12% 5%, rgba(84, 168, 255, 0.13), transparent 34rem),
-          radial-gradient(circle at 90% 20%, rgba(82, 214, 178, 0.1), transparent 30rem),
-          var(--bg);
-        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      }
 
       button, input, select { font: inherit; }
-      .app { width: min(1480px, 100%); margin: 0 auto; padding: 30px 34px 46px; }
-      header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
-      h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.55rem); letter-spacing: -0.045em; }
-      .subtitle { margin: 7px 0 0; color: var(--muted); max-width: 68ch; line-height: 1.5; }
-      .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
-      .nav-link, .github-link, .theme-toggle, .status-pill {
-        min-height: 38px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 9px 13px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        background: var(--panel);
-        color: var(--ink);
-        text-decoration: none;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        font-size: 0.69rem;
-        font-weight: 750;
-      }
-      .nav-link[data-active="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
-      .nav-link:hover, .github-link:hover { color: var(--accent); border-color: var(--accent); }
-      .theme-toggle { cursor: pointer; }
-      .status-pill { gap: 8px; color: var(--muted); }
-      .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
-      .status-pill.connected .status-dot { background: var(--good); box-shadow: 0 0 0 4px rgba(82, 214, 178, 0.12); }
-
-      .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
-      .card, .panel { border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 94%, transparent); box-shadow: var(--shadow); }
-      .card { border-radius: 16px; padding: 16px 17px; min-width: 0; }
-      .card-label { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; font-weight: 750; }
-      .card-value { margin-top: 7px; font-size: 1.75rem; font-weight: 780; letter-spacing: -0.04em; }
-      .card-sub { color: var(--muted); font-size: 0.78rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
       .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
       .toolbar input, .toolbar select {
@@ -111,10 +32,6 @@
       .toolbar input:focus, .toolbar select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
       .topology-grid { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.75fr); gap: 16px; margin-bottom: 16px; }
-      .panel { border-radius: 18px; padding: 17px; min-width: 0; }
-      .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
-      .panel h2 { margin: 0; font-size: 1rem; letter-spacing: -0.015em; }
-      .panel-sub { margin: 4px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.45; }
       .legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; color: var(--muted); font-size: 0.7rem; }
       .legend-item { display: inline-flex; align-items: center; gap: 5px; }
       .legend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
@@ -136,7 +53,6 @@
       .detail { padding: 11px 12px; border-radius: 11px; background: var(--bg-soft); border: 1px solid var(--line); min-width: 0; }
       .detail-label { display: block; color: var(--muted); font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
       .detail-value { overflow-wrap: anywhere; font-size: 0.88rem; }
-      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.78rem; }
       .scope-list { display: flex; flex-wrap: wrap; gap: 5px; }
       .scope { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--muted); font-size: 0.68rem; }
       .status { display: inline-flex; border-radius: 999px; padding: 4px 8px; font-size: 0.68rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.06em; background: rgba(82, 214, 178, 0.12); color: var(--good); }
@@ -153,26 +69,19 @@
       .node-primary { font-weight: 700; }
       .node-secondary { color: var(--muted); font-size: 0.7rem; margin-top: 2px; }
       .empty-row { text-align: center; color: var(--muted); padding: 26px; }
-      .footer-note { margin: 16px 2px 0; color: var(--muted); font-size: 0.75rem; }
-      .footer-note a { color: var(--accent); text-decoration: none; font-weight: 700; }
 
       @media (max-width: 1000px) {
-        header { flex-direction: column; }
-        .header-actions { justify-content: flex-start; }
         .topology-grid { grid-template-columns: 1fr; }
-        .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .graph-shell, #topology-graph { min-height: 460px; height: 460px; }
       }
       @media (max-width: 640px) {
-        .app { padding: 22px 16px 34px; }
-        .metrics { grid-template-columns: 1fr 1fr; }
         .toolbar { align-items: stretch; flex-direction: column; }
         .toolbar input, .toolbar select { flex: 1 1 auto; width: 100%; }
-        .panel-head { flex-direction: column; }
         .legend { justify-content: flex-start; }
         .graph-shell, #topology-graph { min-height: 400px; height: 400px; }
       }
     </style>
+    <link rel="stylesheet" href="/static/dashboard.css" />
   </head>
   <body>
     <main class="app">
@@ -245,6 +154,7 @@
       <p class="footer-note">Built from the latest <span class="mono">*/neighbors</span> MQTT document reported by each observer. Snapshot age and RF last-heard age are shown separately. <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard" target="_blank" rel="noopener">GitHub</a></p>
     </main>
 
+    <script src="/static/live-ui.js"></script>
     <script>
       const SVG_NS = "http://www.w3.org/2000/svg";
       const state = { topology: { observers: [], devices: [], links: [], stats: {} }, broker: {}, selected: null };
@@ -587,12 +497,17 @@
         elements.statusPill.classList.toggle("connected", connected);
         elements.statusText.textContent = connected ? "Connected" : "Disconnected";
       }
+      const renderScheduler = window.DashboardUI.createRenderScheduler((sections) => {
+        if (sections.has("metrics")) renderMetrics();
+        if (sections.has("graph") || sections.has("table")) {
+          const links = filteredLinks();
+          if (sections.has("graph")) renderGraph(links);
+          if (sections.has("table")) renderTable(links);
+        }
+        if (sections.has("detail")) renderDetail();
+      }, { intervalMs: 250 });
       function renderAll() {
-        const links = filteredLinks();
-        renderMetrics();
-        renderGraph(links);
-        renderTable(links);
-        renderDetail();
+        renderScheduler.request("metrics", "graph", "table", "detail");
       }
       function applyTopology(topology) {
         state.topology = topology || { observers: [], devices: [], links: [], stats: {} };
@@ -625,23 +540,24 @@
       let reconnectDelay = 1000;
       function connectWebSocket() {
         clearTimeout(reconnectTimer);
-        ws = new WebSocket(`${scheme}://${location.host}/ws`);
+        ws = new WebSocket(`${scheme}://${location.host}/ws?page=neighbors`);
         ws.addEventListener("open", () => { reconnectDelay = 1000; });
         ws.addEventListener("message", (event) => {
           const message = JSON.parse(event.data);
           if (message.type === "snapshot") {
             state.broker = message.broker || {};
             applyTopology(message.neighbors);
+            renderScheduler.flush();
           } else if (message.type === "neighbors_update") {
             applyTopology(message.neighbors);
           } else if (message.type === "broker_status") {
             state.broker = message.broker || {};
-            renderMetrics();
+            renderScheduler.request("metrics");
           }
         });
         ws.addEventListener("close", () => {
           state.broker.connected = false;
-          renderMetrics();
+          renderScheduler.request("metrics");
           reconnectTimer = setTimeout(connectWebSocket, reconnectDelay);
           reconnectDelay = Math.min(reconnectDelay * 2, 30000);
         });
@@ -649,7 +565,7 @@
       }
       window.addEventListener("beforeunload", () => clearTimeout(reconnectTimer));
       connectWebSocket();
-      setInterval(() => { renderMetrics(); renderTable(filteredLinks()); renderDetail(); }, 15000);
+      setInterval(() => renderScheduler.request("metrics", "table", "detail"), 15000);
       renderAll();
     </script>
   </body>

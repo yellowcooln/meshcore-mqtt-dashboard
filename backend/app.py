@@ -1,6 +1,7 @@
 import asyncio
 from html import escape as html_escape
 import hashlib
+import heapq
 import hmac
 import json
 import math
@@ -1268,7 +1269,130 @@ def _build_packet_event_from_row(
   }
 
 
+class _TrafficEvents(deque):
+  """Retention-owned index: updates are amortized O(1), reads O(buckets + talkers).
+
+  Auxiliary queues only hold references to retained events. In particular the
+  first nonempty name/topic and stable talker tie order must move on expiry,
+  rather than retaining stale metadata from the first packet ever observed.
+  All access is protected by state_lock, like the original retained deque.
+  """
+
+  def __init__(self, events=()):
+    super().__init__()
+    self.bucket_seconds = max(1, math.ceil(max(1, TRAFFIC_HISTORY_SECONDS) / TRAFFIC_CHART_BUCKETS))
+    self.route_counts = _empty_traffic_counts(TRAFFIC_ROUTE_KEYS)
+    self.payload_counts = _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS)
+    self.buckets = {}
+    self.talkers = {}
+    self.sequence = 0
+    self.extend(events)
+
+  @staticmethod
+  def _counts(target, event, delta, normalized=False):
+    for field, keys in (("route", TRAFFIC_ROUTE_KEYS), ("payload", TRAFFIC_PAYLOAD_KEYS)):
+      key = event.get(field, "other")
+      if normalized:
+        key = str(key or "other")
+      counts = target[field + "_counts"]
+      counts[key] = counts.get(key, 0) + delta
+      if counts[key] == 0 and key not in keys:
+        del counts[key]
+
+  def append(self, event):
+    super().append(event)
+    self.sequence += 1
+    item = (self.sequence, event)
+    self._counts(self.__dict__, event, 1)
+    bucket_key = (int(event["ts"]) // self.bucket_seconds) * self.bucket_seconds
+    bucket = self.buckets.get(bucket_key)
+    if bucket is None:
+      bucket = {
+        "total": 0, "route_counts": _empty_traffic_counts(TRAFFIC_ROUTE_KEYS),
+        "payload_counts": _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS),
+      }
+      self.buckets[bucket_key] = bucket
+    bucket["total"] += 1
+    self._counts(bucket, event, 1)
+    key = str(event.get("node_id") or event.get("topic") or "unknown")
+    talker = self.talkers.get(key)
+    if talker is None:
+      talker = {
+        "events": deque(), "names": deque(), "topics": deque(), "latest": deque(),
+        "route_counts": _empty_traffic_counts(TRAFFIC_ROUTE_KEYS),
+        "payload_counts": _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS),
+      }
+      self.talkers[key] = talker
+    talker["events"].append(item)
+    if event.get("name"):
+      talker["names"].append(item)
+    if event.get("topic"):
+      talker["topics"].append(item)
+    while talker["latest"] and talker["latest"][-1][1]["ts"] <= event["ts"]:
+      talker["latest"].pop()
+    talker["latest"].append(item)
+    self._counts(talker, event, 1, normalized=True)
+
+  def extend(self, events):
+    for event in events:
+      self.append(event)
+
+  def popleft(self):
+    event = super().popleft()
+    self._counts(self.__dict__, event, -1)
+    bucket_key = (int(event["ts"]) // self.bucket_seconds) * self.bucket_seconds
+    bucket = self.buckets[bucket_key]
+    bucket["total"] -= 1
+    self._counts(bucket, event, -1)
+    if not bucket["total"]:
+      del self.buckets[bucket_key]
+    key = str(event.get("node_id") or event.get("topic") or "unknown")
+    talker = self.talkers[key]
+    sequence, _ = talker["events"].popleft()
+    for field in ("names", "topics", "latest"):
+      if talker[field] and talker[field][0][0] == sequence:
+        talker[field].popleft()
+    self._counts(talker, event, -1, normalized=True)
+    if not talker["events"]:
+      del self.talkers[key]
+    return event
+
+  def clear(self):
+    self.__init__()
+
+  def top_talkers(self, packets_total):
+    ordered = heapq.nsmallest(TRAFFIC_TOP_TALKERS_LIMIT, self.talkers.values(), key=lambda item: (
+      -len(item["events"]), -max(0.0, item["latest"][0][1]["ts"]), item["events"][0][0],
+    ))
+    result = []
+    for item in ordered:
+      first = item["events"][0][1]
+      entry = {
+        "node_id": first.get("node_id"),
+        "name": item["names"][0][1].get("name") if item["names"] else first.get("name"),
+        "topic": str(item["topics"][0][1].get("topic")) if item["topics"] else "",
+        "packets": len(item["events"]),
+        "last_seen": max(0.0, item["latest"][0][1]["ts"]),
+        "route_counts": dict(item["route_counts"]),
+        "payload_counts": dict(item["payload_counts"]),
+      }
+      entry["share"] = round(entry["packets"] / packets_total * 100, 1) if packets_total else 0.0
+      entry["route_lead"] = _dominant_traffic_key(entry["route_counts"], TRAFFIC_ROUTE_KEYS)
+      entry["payload_lead"] = _dominant_traffic_key(entry["payload_counts"], TRAFFIC_PAYLOAD_KEYS)
+      result.append(entry)
+    return result
+
+
+def _ensure_traffic_index() -> None:
+  global traffic_events
+  bucket_seconds = max(1, math.ceil(max(1, TRAFFIC_HISTORY_SECONDS) / TRAFFIC_CHART_BUCKETS))
+  # Fixtures/embedders can replace the deque; never reuse an index for old state.
+  if not isinstance(traffic_events, _TrafficEvents) or traffic_events.bucket_seconds != bucket_seconds:
+    traffic_events = _TrafficEvents(traffic_events)
+
+
 def _prune_traffic_state(now: float) -> None:
+  _ensure_traffic_index()
   cutoff = now - TRAFFIC_HISTORY_SECONDS
   while traffic_events and traffic_events[0]["ts"] < cutoff:
     traffic_events.popleft()
@@ -1279,8 +1403,8 @@ def _prune_traffic_state(now: float) -> None:
 
 
 def _reset_traffic_state() -> None:
-  global traffic_packets_total, last_traffic_packet_at
-  traffic_events.clear()
+  global traffic_events, traffic_packets_total, last_traffic_packet_at
+  traffic_events = _TrafficEvents()
   traffic_identity_queue.clear()
   traffic_identity_seen.clear()
   traffic_packets_total = 0
@@ -1575,21 +1699,20 @@ def _build_bursts(history: list) -> list:
 def _build_traffic(now: float, include_history: bool = True) -> Dict[str, Any]:
   with state_lock:
     _prune_traffic_state(now)
-    events = [dict(event) for event in traffic_events]
+    assert isinstance(traffic_events, _TrafficEvents)
     packets_total = traffic_packets_total
     last_packet_at = last_traffic_packet_at
+    route_counts = dict(traffic_events.route_counts)
+    payload_counts = dict(traffic_events.payload_counts)
+    packet_rate_count = len(traffic_events)
+    top_talkers = traffic_events.top_talkers(packets_total)
+    buckets = {
+      key: {"total": value["total"], "route_counts": dict(value["route_counts"]),
+            "payload_counts": dict(value["payload_counts"])}
+      for key, value in traffic_events.buckets.items()
+    }
 
   summary_window_seconds = max(1, TRAFFIC_HISTORY_SECONDS)
-  route_counts = _empty_traffic_counts(TRAFFIC_ROUTE_KEYS)
-  payload_counts = _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS)
-  packet_rate_count = 0
-
-  for event in events:
-    packet_rate_count += 1
-    route_key = event.get("route", "other")
-    payload_key = event.get("payload", "other")
-    route_counts[route_key] = route_counts.get(route_key, 0) + 1
-    payload_counts[payload_key] = payload_counts.get(payload_key, 0) + 1
 
   scale = 1.0 / summary_window_seconds
 
@@ -1617,7 +1740,6 @@ def _build_traffic(now: float, include_history: bool = True) -> Dict[str, Any]:
   start_second = int(now) - history_seconds + 1
   bucket_start = (start_second // bucket_seconds) * bucket_seconds
   history = []
-  history_by_second: Dict[int, Dict[str, Any]] = {}
   for index in range(bucket_count):
     ts_value = bucket_start + (index * bucket_seconds)
     bucket = {
@@ -1628,20 +1750,13 @@ def _build_traffic(now: float, include_history: bool = True) -> Dict[str, Any]:
       "payload_counts": _empty_traffic_counts(TRAFFIC_PAYLOAD_KEYS),
     }
     history.append(bucket)
-    history_by_second[ts_value] = bucket
 
-  for event in events:
-    bucket_key = (int(event["ts"]) // bucket_seconds) * bucket_seconds
-    bucket = history_by_second.get(bucket_key)
-    if not bucket:
-      continue
-    bucket["total"] += 1
-    route_key = event.get("route", "other")
-    payload_key = event.get("payload", "other")
-    bucket["route_counts"][route_key] = bucket["route_counts"].get(route_key, 0) + 1
-    bucket["payload_counts"][payload_key] = bucket["payload_counts"].get(payload_key, 0) + 1
+  for bucket in history:
+    counts = buckets.get(bucket["ts"])
+    if counts is not None:
+      bucket.update(counts)
 
-  traffic["top_talkers"] = _build_top_talkers(events, packets_total)
+  traffic["top_talkers"] = top_talkers
   traffic["bursts"] = _build_bursts(history)
 
   if not include_history:
@@ -2110,20 +2225,22 @@ def _build_stats(now: float) -> Dict[str, Any]:
     }
 
 
-def _build_snapshot() -> Dict[str, Any]:
+def _build_snapshot(include_traffic: bool = True) -> Dict[str, Any]:
   now = time.time()
   with state_lock:
     nodes_list = [node.to_dict(now) for node in nodes.values()]
     sys_copy = dict(sys_topics)
     broker_copy = dict(broker_state)
-  return {
+  snapshot = {
     "broker": broker_copy,
     "nodes": nodes_list,
     "sys_topics": sys_copy,
     "stats": _build_stats(now),
-    "traffic": _build_traffic(now),
     "neighbors": _build_neighbors_topology(),
   }
+  if include_traffic:
+    snapshot["traffic"] = _build_traffic(now)
+  return snapshot
 
 
 def _queue_broadcast(message: Dict[str, Any]) -> None:
@@ -2761,7 +2878,8 @@ async def websocket_endpoint(ws: WebSocket):
   with state_lock:
     ws_clients.add(ws)
     ws_client_count = len(ws_clients)
-  await ws.send_json({"type": "snapshot", **_build_snapshot()})
+  include_traffic = ws.query_params.get("page") not in {"dashboard", "neighbors"}
+  await ws.send_json({"type": "snapshot", **_build_snapshot(include_traffic=include_traffic)})
   try:
     while True:
       await ws.receive_text()
