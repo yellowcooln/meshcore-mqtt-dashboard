@@ -1,9 +1,9 @@
-FROM node:24.22.1-trixie-slim AS node-dependencies
+FROM node:24.22.2-trixie-slim AS node-dependencies
 WORKDIR /dependencies
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --fund=false
 
-FROM python:3.15.1-slim-trixie
+FROM python:3.15.2-slim-trixie
 WORKDIR /app
 
 # Both official stages use Debian trixie/glibc. Keep npm build-only;
@@ -18,7 +18,8 @@ RUN node --version \
   && node -e "require('@michaelhart/meshcore-decoder/dist/crypto/key-manager.js'); require('@michaelhart/meshcore-decoder/dist/decoder/payload-decoders/group-text.js')"
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip==26.3 \
+  && pip install --no-cache-dir -r requirements.txt
 
 COPY app.py /app/app.py
 COPY scripts /app/scripts

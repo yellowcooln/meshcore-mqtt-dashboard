@@ -7,7 +7,8 @@
 - Anchored retained neighbor ages to firmware report timestamps, rejected topic/payload identity mismatches, ignored out-of-order reports, and removed topology state when retained topics are deleted.
 - Kept neighbor persistence active when packet history is disabled, kept zero-neighbor observers visible, and added bounded websocket reconnection for the live topology page.
 - Added collision-aware graph positioning so unrelated nodes and labels do not overlap neighbor edges.
-- Updated pytest to `9.2.0` and verified the Neighbors feature alongside the current production runtime and dependencies.
+- Updated FastAPI to `0.162.2`, Paho MQTT to `2.2.0`, and pytest to `9.2.0` while preserving MQTT Neighbors support.
+- Updated the container and CI to stable Python `3.15.2` and Node `24.22.2` LTS, retaining the Debian trixie runtime.
 
 ## v1.3.4 - 2026-10-25
 - Updated FastAPI and Uvicorn with fresh compatible Python dependencies while preserving the dashboard, retained traffic and battery telemetry interfaces.
