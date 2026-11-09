@@ -12,17 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.15.1"
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
 
       - name: Install dependencies
         run: |
@@ -33,4 +33,15 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Run tests
-        run: pytest -q
+        run: |
+          pytest -q -ra --junitxml=test-results.xml
+          python -c 'import xml.etree.ElementTree as E; suites = E.parse("test-results.xml").getroot().iter("testsuite"); assert sum(int(s.get("skipped", 0)) for s in suites) == 0, "Unexpected skipped tests"'
+
+      - name: Build actual production runtime
+        run: docker build --pull -t mqtt-dashboard-runtime:ci ./backend
+
+      - name: Exercise production runtime without test dependencies
+        run: |
+          docker run --rm --network none --tmpfs /data \
+            -v "$PWD/tests/runtime_smoke.py:/verification/runtime_smoke.py:ro" \
+            mqtt-dashboard-runtime:ci python /verification/runtime_smoke.py
