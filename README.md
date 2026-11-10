@@ -1,10 +1,29 @@
-# MQTT Dashboard
+<h1 align="center">MeshCore MQTT Dashboard</h1>
 
-Live MeshCore MQTT dashboard for node activity, neighbor topology, and traffic analysis.
+<p align="center">
+  Live MeshCore node activity, neighbor topology, and traffic analysis.<br />
+  Self-hosted, with real-time updates from your MQTT broker.
+</p>
 
-**Version:** `v1.3.5.1` · [Live preview](https://mcmqttdashboard.bostonme.sh/) · [Changelog](./CHANGES.MD) · [Docker Hub](https://hub.docker.com/r/yellowcooln/meshcore-mqtt-dashboard)
+<p align="center">
+  <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard/releases"><img src="https://img.shields.io/github/v/release/yellowcooln/meshcore-mqtt-dashboard?style=flat&amp;color=0f766e" alt="Latest release" /></a>
+  <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard/actions/workflows/tests.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/yellowcooln/meshcore-mqtt-dashboard/tests.yml?branch=main&amp;style=flat&amp;label=tests" alt="Tests on main" /></a>
+  <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard/actions/workflows/docker-publish.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/yellowcooln/meshcore-mqtt-dashboard/docker-publish.yml?branch=main&amp;style=flat&amp;label=docker%20build" alt="Docker build on main" /></a>
+  <a href="https://hub.docker.com/r/yellowcooln/meshcore-mqtt-dashboard"><img src="https://img.shields.io/docker/pulls/yellowcooln/meshcore-mqtt-dashboard?style=flat&amp;logo=docker&amp;logoColor=white" alt="Docker pulls" /></a>
+</p>
 
-![Dashboard preview](./docs/example.png)
+<p align="center">
+  <a href="https://mcmqttdashboard.bostonme.sh/">Live demo</a> &middot;
+  <a href="#quick-start">Quick start</a> &middot;
+  <a href="./docs.md">Documentation</a> &middot;
+  <a href="#configuration">Configuration</a> &middot;
+  <a href="./CHANGES.MD">Changelog</a> &middot;
+  <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard/issues">Report an issue</a>
+</p>
+
+![Boston MeshCore MQTT Dashboard showing online nodes, traffic metrics, and node details](./docs/boston-example.png)
+
+<p align="center"><em>A look at the Boston Mesh deployment. Connect your own broker and customize the dashboard for your mesh.</em></p>
 
 ## Features
 
@@ -16,25 +35,68 @@ Live MeshCore MQTT dashboard for node activity, neighbor topology, and traffic a
 
 ## Quick start
 
+### Run the prebuilt Docker image
+
+Prebuilt images are available on [Docker Hub](https://hub.docker.com/r/yellowcooln/meshcore-mqtt-dashboard)—no local build required:
+
+- **`yellowcooln/meshcore-mqtt-dashboard:latest`** — production image from `main`.
+- **`yellowcooln/meshcore-mqtt-dashboard:dev`** — development image from `dev`.
+
+Install Docker with the Compose plugin, then download the configuration template into a new directory:
+
+```bash
+mkdir meshcore-mqtt-dashboard
+cd meshcore-mqtt-dashboard
+curl -fsSL https://raw.githubusercontent.com/yellowcooln/meshcore-mqtt-dashboard/main/.env.example -o .env
+```
+
+Edit `.env` with your broker address, credentials, and topics. `MQTT_HOST` must be reachable from the container; `localhost` refers to the container itself.
+
+Create `docker-compose.yaml` alongside `.env`:
+
+```yaml
+services:
+  mqtt-dashboard:
+    image: yellowcooln/meshcore-mqtt-dashboard:latest
+    ports:
+      - "${WEB_PORT:-8081}:8081"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+```
+
+Pull the image and start the dashboard:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Open **http://localhost:8081**, or use your server's address and configured `WEB_PORT`. Keep the `./data` directory when updating; it holds persisted history and neighbor snapshots.
+
+### Build from source instead
+
+For local changes, clone the repository and use its included build-based Compose file:
+
 ```bash
 git clone https://github.com/yellowcooln/meshcore-mqtt-dashboard
 cd meshcore-mqtt-dashboard
 cp .env.example .env
 ```
 
-Edit `.env` with your broker address, credentials, and topics. `MQTT_HOST` must be reachable from the container; `localhost` refers to the container itself.
+Configure `.env` as above, then build and start:
 
 ```bash
 docker compose up -d --build
 ```
 
-Open **http://localhost:8081**, or use your server's address and configured `WEB_PORT`.
-
-To use a prebuilt image, replace `build: ./backend` in `docker-compose.yaml` with `image: yellowcooln/meshcore-mqtt-dashboard:latest`, then run `docker compose up -d`. Use the `:dev` tag for development builds.
+The dashboard is available at the same address and port described above.
 
 ## Configuration
 
-Settings are loaded from `.env`. See [`.env.example`](./.env.example) for the complete list.
+Settings are loaded from `.env`. See [`.env.example`](./.env.example) for the complete list and the [setup and operations guide](./docs.md) for broker connections, neighbor uploads, battery telemetry, updates, and troubleshooting.
 
 | Setting | Purpose |
 | --- | --- |
@@ -80,6 +142,12 @@ pytest -q
 ```
 
 Node.js is needed for decoder tests. Rebuild the local application with `docker compose up -d --build`.
+
+## About these projects
+
+I build these projects with the help of AI when I see a need for software I want to use myself. The goal is to make something useful, run it on my own systems, and share it with anyone else who might find it helpful.
+
+This is something I do for fun, in my free time outside of work and family. If you find these tools useful and would like to support the time that goes into them, a little support on [Ko-fi](https://ko-fi.com/yellowcooln) is always appreciated. No pressure. Using the software, reporting bugs, and contributing ideas helps too.
 
 ## Star History
 
