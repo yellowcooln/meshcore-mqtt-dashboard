@@ -1,4 +1,4 @@
 -r backend/requirements.txt
 cryptography==50.0.2
-pytest==9.1.1
+pytest==9.2.0
 httpx2==2.16.0

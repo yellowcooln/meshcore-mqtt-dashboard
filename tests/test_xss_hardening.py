@@ -27,7 +27,7 @@ def test_template_replacements_escape_html(client):
 def test_node_dashboard_escapes_untrusted_meshcore_fields():
   html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
 
-  assert "idCell.textContent = displayName;" in html
+  assert "cached.id.textContent = displayName;" in html
   assert "topicSpan.textContent = topic;" in html
   assert "valueSpan.textContent = formatNumber(data.value);" in html
   assert "${escapeHtml(node.node_id)}" in html

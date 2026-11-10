@@ -1,5 +1,21 @@
 # Changes
 
+## v1.3.5 - 2026-11-09
+- Unified all pages with the Neighbors layout, shared light/dark themes, and responsive styling.
+- Replaced repeated full-history traffic scans with incremental summaries while preserving retained history, deduplication, and chart calculations.
+- Added lightweight initial dashboard and Neighbors streams for faster page loading without changing existing API snapshot behavior.
+- Batched live screen updates, reused node rows, and added stable name sorting with a most-recent option to prevent constant reshuffling.
+- Kept processing traffic in background tabs and refreshed the latest state on return without replaying intermediate redraws.
+- Simplified the README around setup, configuration, features, and API access.
+- Added a live `/neighbors` topology page with an observer-to-neighbor graph, synchronized filters, link table, and selection details.
+- Added validated ingestion for MeshCore `*/neighbors` MQTT snapshots, including SNR, last-heard age, discovery status, and flood scopes.
+- Persisted the latest neighbor snapshot per observer in SQLite and exposed normalized topology data through `/neighbors/data` and websocket updates.
+- Anchored retained neighbor ages to firmware report timestamps, rejected topic/payload identity mismatches, ignored out-of-order reports, and removed topology state when retained topics are deleted.
+- Kept neighbor persistence active when packet history is disabled, kept zero-neighbor observers visible, and added bounded websocket reconnection for the live topology page.
+- Added collision-aware graph positioning so unrelated nodes and labels do not overlap neighbor edges.
+- Updated FastAPI to `0.162.2`, Paho MQTT to `2.2.0`, and pytest to `9.2.0` while preserving MQTT Neighbors support.
+- Updated the container and CI to stable Python `3.15.2` and Node `24.22.2` LTS, retaining the Debian trixie runtime.
+
 ## v1.3.4 - 2026-10-25
 - Updated FastAPI and Uvicorn with fresh compatible Python dependencies while preserving the dashboard, retained traffic and battery telemetry interfaces.
 - Moved the container to Python 3.15.1 and official Node 24 LTS instead of the distribution's obsolete Node 20, with npm kept out of the production image.

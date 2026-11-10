@@ -36,6 +36,7 @@ def client(monkeypatch):
   dashboard_app.BATTERYINFO_SHOW_CHANNEL_NAME = False
   dashboard_app.BATTERYINFO_CHANNEL_KEY = ""
   dashboard_app.nodes = {}
+  dashboard_app.neighbor_snapshots = {}
   dashboard_app.sys_topics = {}
   dashboard_app.message_times = deque()
   dashboard_app.message_total = 0

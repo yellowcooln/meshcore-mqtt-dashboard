@@ -13,242 +13,7 @@
     <meta name="twitter:title" content="__DASH_TITLE__" />
     <meta name="twitter:description" content="__DASH_DESCRIPTION__" />
     __DASH_FAVICON_TAGS__
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
     <style>
-      :root {
-        --ink: #e7edf5;
-        --muted: #9aa7b6;
-        --panel: #0f1823;
-        --panel-strong: #172333;
-        --accent: #4aa3ff;
-        --accent-2: #5de2c5;
-        --accent-3: #ffbe6b;
-        --warn: #ff7b66;
-        --grid: rgba(255, 255, 255, 0.08);
-        --shadow: 0 26px 64px rgba(0, 0, 0, 0.38);
-        --bg-gradient:
-          radial-gradient(circle at 18% 15%, rgba(74, 163, 255, 0.22), transparent 60%),
-          radial-gradient(circle at 80% 10%, rgba(93, 226, 197, 0.18), transparent 55%),
-          radial-gradient(circle at 85% 80%, rgba(255, 190, 107, 0.12), transparent 50%),
-          linear-gradient(160deg, #0a1119 0%, #0f1a27 50%, #0b1320 100%);
-        --grid-stripe: transparent;
-      }
-
-      [data-theme="light"] {
-        --ink: #1b2430;
-        --muted: #5a6a7a;
-        --panel: #f4f6fb;
-        --panel-strong: #e9eef6;
-        --accent: #1f6fe0;
-        --accent-2: #158a6a;
-        --accent-3: #f0b24a;
-        --warn: #d4584f;
-        --grid: rgba(24, 40, 64, 0.12);
-        --shadow: 0 18px 50px rgba(17, 34, 56, 0.12);
-        --bg-gradient:
-          radial-gradient(circle at 18% 15%, rgba(31, 111, 224, 0.18), transparent 60%),
-          radial-gradient(circle at 82% 12%, rgba(21, 138, 106, 0.1), transparent 50%),
-          radial-gradient(circle at 88% 75%, rgba(240, 178, 74, 0.12), transparent 50%),
-          linear-gradient(160deg, #f5f7fb 0%, #eef2f7 52%, #f8fafd 100%);
-        --grid-stripe: transparent;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        width: 100%;
-        min-height: 100%;
-      }
-
-      html {
-        background: var(--bg-gradient);
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
-        color: var(--ink);
-        overflow-x: hidden;
-        background: transparent;
-      }
-
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image: none;
-        background-size: 100% 28px;
-        pointer-events: none;
-        opacity: 0.45;
-      }
-
-      .app {
-        position: relative;
-        padding: 36px 40px 48px;
-        width: 100%;
-        max-width: 1280px;
-        margin: 0 auto;
-        animation: fade-in 600ms ease-out;
-      }
-
-      header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
-        margin-bottom: 28px;
-      }
-
-      .header-actions {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-
-      .title-block h1 {
-        margin: 0;
-        font-size: 2.2rem;
-        letter-spacing: -0.02em;
-      }
-
-      .title-block p {
-        margin: 6px 0 0;
-        font-size: 0.95rem;
-        color: var(--muted);
-      }
-
-      .status-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 16px;
-        border-radius: 999px;
-        background: var(--panel);
-        box-shadow: var(--shadow);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 0.72rem;
-      }
-
-      .status-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--warn);
-        box-shadow: 0 0 0 4px rgba(255, 141, 109, 0.2);
-      }
-
-      .status-pill.connected .status-dot {
-        background: var(--accent-2);
-        box-shadow: 0 0 0 4px rgba(109, 214, 168, 0.2);
-      }
-
-      .theme-toggle {
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: var(--panel);
-        color: var(--ink);
-        border-radius: 999px;
-        padding: 10px 14px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        cursor: pointer;
-        box-shadow: var(--shadow);
-      }
-
-      .github-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px 14px;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: var(--panel);
-        color: var(--ink);
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        text-decoration: none;
-        box-shadow: var(--shadow);
-      }
-
-      .github-link:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-
-      .footer-link {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
-      }
-
-      .footer-link:hover {
-        text-decoration: underline;
-      }
-
-      [data-theme="light"] .theme-toggle {
-        border-color: rgba(24, 40, 64, 0.2);
-      }
-
-      [data-theme="light"] .github-link {
-        border-color: rgba(24, 40, 64, 0.2);
-      }
-
-      .metrics {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-        gap: 18px;
-        margin-bottom: 24px;
-        width: 100%;
-      }
-
-      .card {
-        background: var(--panel);
-        border: 1px solid rgba(93, 75, 52, 0.08);
-        border-radius: 18px;
-        padding: 18px 18px 16px;
-        box-shadow: var(--shadow);
-        min-width: 0;
-        width: 100%;
-        animation: rise 540ms ease-out;
-      }
-
-      .card h3 {
-        margin: 0 0 12px;
-        font-size: 0.95rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-      }
-
-      .metric-value {
-        font-size: 1.9rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        overflow-wrap: anywhere;
-      }
-
-      .metric-sub {
-        margin-top: 8px;
-        font-size: 0.86rem;
-        color: var(--muted);
-        overflow-wrap: anywhere;
-      }
 
       .grid {
         display: grid;
@@ -256,22 +21,6 @@
         gap: 24px;
         width: 100%;
         min-width: 0;
-      }
-
-      .panel {
-        background: var(--panel);
-        border: 1px solid rgba(93, 75, 52, 0.08);
-        border-radius: 22px;
-        padding: 18px 18px 20px;
-        box-shadow: var(--shadow);
-        width: 100%;
-        min-width: 0;
-        overflow: hidden;
-      }
-
-      .panel h2 {
-        margin: 0 0 12px;
-        font-size: 1.1rem;
       }
 
       .filters {
@@ -408,12 +157,6 @@
         margin-bottom: 6px;
       }
 
-      .mono {
-        font-family: "IBM Plex Mono", "Courier New", monospace;
-        overflow-wrap: anywhere;
-        word-break: break-word;
-      }
-
       .sys-list {
         max-height: 280px;
         overflow-y: auto;
@@ -430,12 +173,6 @@
       }
 
       .sys-item span {
-        color: var(--muted);
-      }
-
-      .footer-note {
-        margin-top: 18px;
-        font-size: 0.8rem;
         color: var(--muted);
       }
 
@@ -465,39 +202,9 @@
         .grid {
           grid-template-columns: 1fr;
         }
-
-        header {
-          flex-direction: column;
-          align-items: flex-start;
-        }
       }
 
       @media (max-width: 720px) {
-        .app {
-          padding: 28px 22px 36px;
-          margin: 0;
-          max-width: 100%;
-        }
-
-        .title-block h1 {
-          font-size: 1.8rem;
-        }
-
-        .title-block p {
-          font-size: 0.88rem;
-        }
-
-        .header-actions {
-          width: 100%;
-          justify-content: flex-start;
-        }
-
-        .github-link,
-        .theme-toggle,
-        .status-pill {
-          flex: 1 1 auto;
-          justify-content: center;
-        }
 
         .filters {
           flex-direction: column;
@@ -514,15 +221,6 @@
       }
 
       @media (max-width: 640px) {
-        .app {
-          padding: 24px 18px 36px;
-          margin: 0;
-          max-width: 100%;
-        }
-
-        .metrics {
-          grid-template-columns: 1fr;
-        }
 
         table {
           font-size: 0.85rem;
@@ -535,6 +233,7 @@
         }
       }
     </style>
+    <link rel="stylesheet" href="/static/dashboard.css" />
   </head>
   <body>
     <div class="app">
@@ -544,7 +243,9 @@
           <p id="dash-subtitle">__DASH_DESCRIPTION__</p>
         </div>
         <div class="header-actions">
-          <a class="github-link" href="/traffic">Traffic</a>
+          <a class="nav-link" href="/" data-active="true">Dashboard</a>
+          __NEIGHBORS_INDEX_LINK__
+          <a class="nav-link" href="/traffic">Traffic</a>
           __BATTERY_INDEX_LINK__
           __DASH_EXTERNAL_LINK__
           <button class="theme-toggle" id="theme-toggle" type="button">Light Mode</button>
@@ -578,6 +279,10 @@
           <h2>Nodes</h2>
         <div class="filters">
             <input type="text" id="node-filter" placeholder="Search by node name or id" />
+            <select id="node-sort" aria-label="Node sort order">
+              <option value="name">Online · Name</option>
+              <option value="recent">Online · Most recent</option>
+            </select>
             <label class="toggle">
               <input type="checkbox" id="online-only" />
               Online only
@@ -620,6 +325,7 @@
       </p>
     </div>
 
+    <script src="/static/live-ui.js"></script>
     <script>
       const state = {
         nodes: new Map(),
@@ -646,12 +352,23 @@
         sysList: document.getElementById("sys-list"),
         nodeFilter: document.getElementById("node-filter"),
         onlineOnly: document.getElementById("online-only"),
+        nodeSort: document.getElementById("node-sort"),
         sysFilter: document.getElementById("sys-filter"),
         themeToggle: document.getElementById("theme-toggle"),
         externalLink: document.getElementById("external-link"),
       };
 
       let selectedNodeId = null;
+      const nodeRows = new Map();
+      const liveRenderer = DashboardUI.createRenderScheduler((sections) => {
+        if (sections.has("all")) { renderAll(); return; }
+        if (sections.has("broker")) renderBroker();
+        if (sections.has("brokerDetail")) renderBrokerDetail();
+        if (sections.has("stats")) renderStats();
+        if (sections.has("nodes")) renderNodes();
+        if (sections.has("nodeDetail")) renderNodeDetail();
+        if (sections.has("sys")) renderSys();
+      });
 
       function formatAge(timestamp) {
         if (!timestamp) return "--";
@@ -725,7 +442,8 @@
         if (!selectedNodeId && state.nodes.size) {
           selectedNodeId = state.nodes.keys().next().value;
         }
-        renderAll();
+        liveRenderer.request("all");
+        liveRenderer.flush();
       }
 
       function applyNodeUpdate(node, stats) {
@@ -736,7 +454,8 @@
         if (!selectedNodeId) {
           selectedNodeId = node.node_id;
         }
-        renderAll();
+        liveRenderer.request("nodes", "stats");
+        if (node.node_id === selectedNodeId) liveRenderer.request("nodeDetail");
       }
 
       function applySysUpdate(topic, value) {
@@ -744,14 +463,12 @@
           value,
           ts: Date.now() / 1000,
         };
-        renderSys();
-        renderStats();
+        liveRenderer.request("sys", "stats");
       }
 
       function applyBrokerUpdate(broker) {
         state.broker = broker || {};
-        renderBroker();
-        renderStats();
+        liveRenderer.request("broker", "brokerDetail", "nodes", "stats", "nodeDetail");
       }
 
       function renderAll() {
@@ -810,48 +527,54 @@
           .map((node) => ({ ...node, online: isOnline(node) }))
           .filter((node) => {
             if (onlineOnly && !node.online) return false;
-            if (!query) return true;
-            return (
-              node.node_id.toLowerCase().includes(query) ||
-              (node.name || "").toLowerCase().includes(query)
-            );
+            return !query || node.node_id.toLowerCase().includes(query) || (node.name || "").toLowerCase().includes(query);
           })
           .sort((a, b) => {
             if (a.online !== b.online) return a.online ? -1 : 1;
-            return (b.last_seen || 0) - (a.last_seen || 0);
+            if (elements.nodeSort.value === "recent") {
+              const byTime = (b.last_seen || 0) - (a.last_seen || 0);
+              if (byTime) return byTime;
+            }
+            const byName = (a.name || a.node_id).localeCompare(b.name || b.node_id, undefined, { sensitivity: "base", numeric: true });
+            return byName || a.node_id.localeCompare(b.node_id);
           });
-
-        elements.nodeTable.innerHTML = "";
+        const visible = new Set(nodes.map(node => node.node_id));
+        for (const [id, cached] of nodeRows) {
+          if (!visible.has(id)) cached.row.remove();
+          if (!state.nodes.has(id)) nodeRows.delete(id);
+        }
+        let cursor = elements.nodeTable.firstChild;
         nodes.forEach((node) => {
-          const row = document.createElement("tr");
-          if (node.node_id === selectedNodeId) {
-            row.classList.add("selected");
+          let cached = nodeRows.get(node.node_id);
+          if (!cached) {
+            const row = document.createElement("tr");
+            row.dataset.nodeId = node.node_id;
+            const statusCell = document.createElement("td");
+            const tag = document.createElement("span");
+            statusCell.appendChild(tag);
+            const id = document.createElement("td");
+            id.className = "node-name";
+            const seen = document.createElement("td");
+            [statusCell, id, seen].forEach(cell => row.appendChild(cell));
+            row.addEventListener("click", () => {
+              selectedNodeId = node.node_id;
+              renderNodeDetail();
+              renderNodes();
+            });
+            cached = { row, tag, id, seen };
+            nodeRows.set(node.node_id, cached);
           }
-          row.addEventListener("click", () => {
-            selectedNodeId = node.node_id;
-            renderNodeDetail();
-            renderNodes();
-          });
-
-          const statusCell = document.createElement("td");
-          const statusTag = document.createElement("span");
-          statusTag.className = "tag" + (node.online ? "" : " offline");
-          statusTag.textContent = node.online ? "Online" : "Offline";
-          statusCell.appendChild(statusTag);
-
-          const idCell = document.createElement("td");
+          cached.row.classList.toggle("selected", node.node_id === selectedNodeId);
+          cached.tag.className = "tag" + (node.online ? "" : " offline");
+          const status = node.online ? "Online" : "Offline";
+          if (cached.tag.textContent !== status) cached.tag.textContent = status;
           const displayName = node.name || node.node_id;
-          idCell.textContent = displayName;
-          idCell.className = "node-name";
-          idCell.title = node.name ? node.node_id : "";
-
-          const seenCell = document.createElement("td");
-          seenCell.textContent = formatAge(node.last_seen);
-
-          [statusCell, idCell, seenCell].forEach((cell) => {
-            row.appendChild(cell);
-          });
-          elements.nodeTable.appendChild(row);
+          if (cached.id.textContent !== displayName) cached.id.textContent = displayName;
+          cached.id.title = node.name ? node.node_id : "";
+          const age = formatAge(node.last_seen);
+          if (cached.seen.textContent !== age) cached.seen.textContent = age;
+          if (cached.row !== cursor) elements.nodeTable.insertBefore(cached.row, cursor);
+          cursor = cached.row.nextSibling;
         });
       }
 
@@ -965,7 +688,7 @@
         }
 
         const scheme = location.protocol === "https:" ? "wss" : "ws";
-        const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+        const ws = new WebSocket(`${scheme}://${location.host}/ws?page=dashboard`);
         ws.addEventListener("message", (event) => {
           const data = JSON.parse(event.data);
           if (data.type === "snapshot") {
@@ -981,14 +704,14 @@
             if (selectedNodeId === data.node_id) {
               selectedNodeId = null;
             }
-            renderNodes();
-            renderNodeDetail();
+            liveRenderer.request("nodes", "nodeDetail", "stats");
           }
         });
       }
 
       elements.nodeFilter.addEventListener("input", renderNodes);
       elements.onlineOnly.addEventListener("change", renderNodes);
+      elements.nodeSort.addEventListener("change", renderNodes);
       elements.sysFilter.addEventListener("input", renderSys);
       elements.themeToggle.addEventListener("click", () => {
         const isLight = document.documentElement.getAttribute("data-theme") === "light";
@@ -1004,9 +727,7 @@
       });
 
       setInterval(() => {
-        renderNodes();
-        renderStats();
-        renderNodeDetail();
+        liveRenderer.request("nodes", "stats", "nodeDetail");
       }, 5000);
 
       init();

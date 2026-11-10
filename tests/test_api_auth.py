@@ -11,6 +11,17 @@ def test_public_traffic_page_is_accessible_without_token(client):
   assert response.status_code == 200
 
 
+def test_public_neighbors_page_is_accessible_without_token(client):
+  response = client.get("/neighbors")
+  assert response.status_code == 200
+
+
+def test_neighbors_data_requires_token_when_enabled(client):
+  dashboard_app.DASH_API_TOKEN = "test-token"
+  response = client.get("/neighbors/data")
+  assert response.status_code == 401
+
+
 def test_snapshot_requires_token_when_enabled(client):
   dashboard_app.DASH_API_TOKEN = "test-token"
   response = client.get("/snapshot")

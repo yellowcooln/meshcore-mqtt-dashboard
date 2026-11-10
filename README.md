@@ -1,190 +1,85 @@
 # MQTT Dashboard
 
-Live MQTT dashboard for node presence, retained traffic analysis, roles, and broker telemetry.
+Live MeshCore MQTT dashboard for node activity, neighbor topology, and traffic analysis.
 
-- Release notes: [CHANGES.MD](./CHANGES.MD)
-- Current version: `v1.3.4`
-- Preview: [https://mcmqttdashboard.bostonme.sh/](https://mcmqttdashboard.bostonme.sh/)
-- Docker image: `yellowcooln/meshcore-mqtt-dashboard`
+**Version:** `v1.3.5` · [Live preview](https://mcmqttdashboard.bostonme.sh/) · [Changelog](./CHANGES.MD) · [Docker Hub](https://hub.docker.com/r/yellowcooln/meshcore-mqtt-dashboard)
 
 ![Dashboard preview](./docs/example.png)
 
-## Supported runtimes and maintenance
+## Features
 
-The production image uses Python 3.15.1 and official Node 24.22.1 LTS on
-Debian trixie. Node runs the optional battery decoder; npm is used only in
-the build stage. `.nvmrc` and the backend's Node engine range keep local
-development and CI on the same supported Node line.
+- **Dashboard:** online nodes, device roles, packet inspection, and optional broker `$SYS` telemetry.
+- **Traffic:** retained packet history, route/payload charts, top talkers, and burst activity.
+- **Neighbors:** observer topology, SNR, last-heard ages, and a filterable link table.
+- **Battery Info:** optional decoded battery telemetry from a configured channel.
+- Shared light/dark themes and mobile layouts, with batched live updates and stable node sorting.
 
-Weekly Dependabot checks cover Python, backend npm packages, container bases
-and GitHub Actions. Node-major upgrades require a deliberate LTS migration;
-normal patch/minor and security updates remain eligible. Dependency PRs target
-`main`; automation starts when its configuration is merged there.
-
-CI runs the Python tests with the real Node decoder and builds the production
-image for a separate HTTP/authentication/WebSocket, encrypted-decoder and
-SQLite restart smoke check. You can run that smoke check locally without
-production credentials or data:
-
-```bash
-docker build -t mqtt-dashboard:verify ./backend
-docker run --rm --network none --tmpfs /data \
-  -v "$PWD/tests/runtime_smoke.py:/verification/runtime_smoke.py:ro" \
-  mqtt-dashboard:verify python /verification/runtime_smoke.py
-```
-
-Python 3.15 currently installs pure-Python PyYAML without its optional LibYAML
-accelerator. This does not affect the dashboard's existing JSON/SQLite data
-format. The decoder's existing CryptoJS dependency remains upstream-owned;
-unsupported transitive major overrides are not applied.
-
-## Quick Start (Docker)
+## Quick start
 
 ```bash
 git clone https://github.com/yellowcooln/meshcore-mqtt-dashboard
 cd meshcore-mqtt-dashboard
 cp .env.example .env
+```
+
+Edit `.env` with your broker address, credentials, and topics. `MQTT_HOST` must be reachable from the container; `localhost` refers to the container itself.
+
+```bash
 docker compose up -d --build
 ```
 
-Open `http://localhost:8081` (or set `WEB_PORT`).
+Open **http://localhost:8081**, or use your server's address and configured `WEB_PORT`.
 
-Published image examples:
-
-```bash
-docker pull yellowcooln/meshcore-mqtt-dashboard:latest
-```
-
-Run the published image directly:
-
-```bash
-docker run -d \
-  --name mqtt-dashboard \
-  --env-file .env \
-  -p 8081:8081 \
-  -v "$(pwd)/data:/data" \
-  yellowcooln/meshcore-mqtt-dashboard:latest
-```
-
-Use the published image in Compose:
-
-```yaml
-services:
-  mqtt-dashboard:
-    image: yellowcooln/meshcore-mqtt-dashboard:latest
-    container_name: mqtt-dashboard
-    env_file:
-      - .env
-    ports:
-      - "8081:8081"
-    volumes:
-      - ./data:/data
-    restart: unless-stopped
-```
-
-## Local Development (Python)
-
-```bash
-git clone https://github.com/yellowcooln/meshcore-mqtt-dashboard
-cd meshcore-mqtt-dashboard/backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app:app --reload --host 0.0.0.0 --port 8081
-```
-
-## Testing
-
-```bash
-pip install -r requirements-dev.txt
-pytest -q
-```
-
-CI runs the same suite in GitHub Actions on pull requests and pushes to `main`/`dev`.
-Docker images are published from `main` to Docker Hub as `yellowcooln/meshcore-mqtt-dashboard`.
-
-## API and Auth
-
-- Public:
-  - `/` (dashboard page)
-  - `/traffic` (retention-backed traffic page)
-  - `/batteryinfo` (optional decoded battery telemetry page)
-  - `/ws` (live dashboard websocket)
-- Protected when `DASH_API_TOKEN` is set:
-  - `/snapshot`
-  - `/stats`
-  - `/packets`
-- Token can be sent by:
-  - header `X-Dashboard-Token` (or `DASH_API_TOKEN_HEADER`)
-  - `Authorization: Bearer <token>`
-  - query `?token=<token>`
+To use a prebuilt image, replace `build: ./backend` in `docker-compose.yaml` with `image: yellowcooln/meshcore-mqtt-dashboard:latest`, then run `docker compose up -d`. Use the `:dev` tag for development builds.
 
 ## Configuration
 
-Copy `.env.example` and set what you need.
-`docker-compose.yaml` loads the container environment from `.env`.
+Settings are loaded from `.env`. See [`.env.example`](./.env.example) for the complete list.
 
-### Dashboard
-- `WEB_PORT`
-- `DASH_TITLE`
-- `DASH_BROKER_HOST` (optional broker endpoint shown in the UI; for example `broker.example.net` or `broker.example.net:443`)
-- `DASH_LOGO_URL` (favicon only; `.png`, `.jpg`, `.jpeg`)
-- `DASH_EXTERNAL_URL` (optional header button URL; `http`/`https`)
-- `DASH_EXTERNAL_LABEL`
-- `DASH_API_TOKEN`
-- `DASH_API_TOKEN_HEADER`
+| Setting | Purpose |
+| --- | --- |
+| `MQTT_HOST`, `MQTT_PORT` | Broker connection address. |
+| `MQTT_USERNAME`, `MQTT_PASSWORD` | Broker credentials, when required. |
+| `MQTT_TOPIC` | Topic subscription; comma-separated topics are supported. |
+| `MQTT_TRANSPORT`, `MQTT_WS_PATH` | TCP or WebSocket transport and WebSocket path. |
+| `MQTT_TLS`, `MQTT_CA_CERT` | TLS connection settings. |
+| `WEB_PORT`, `DASH_TITLE` | Web port and dashboard title. |
+| `DASH_BROKER_HOST` | Display-only broker label; does not change the connection address. |
+| `SYS_TOPICS_ENABLED` | Show or hide broker `$SYS` telemetry. |
+| `PACKET_RETENTION_SECONDS` | Packet history retention, capped at 24 hours. |
+| `DASH_API_TOKEN` | Optional protection for the HTTP data endpoints below. |
+| `BATTERYINFO_ENABLED` | Enable Battery Info; disabled by default. |
 
-### MQTT Broker
-- `MQTT_HOST`, `MQTT_PORT`
-- `MQTT_USERNAME`, `MQTT_PASSWORD`
-- `MQTT_TRANSPORT` (`tcp` or `websockets`)
-- `MQTT_WS_PATH`
-- `MQTT_TLS`, `MQTT_TLS_INSECURE`, `MQTT_CA_CERT`
-- `MQTT_CLIENT_ID`
-- `MQTT_AUTH_TOKEN`, `MQTT_AUTH_TOKEN_HEADER`, `MQTT_AUTH_TOKEN_SCHEME`
+Battery decoding also requires `BATTERYINFO_CHANNEL_NAME` and `BATTERYINFO_CHANNEL_KEY`. Battery history has its own retention setting, `BATTERYINFO_RETENTION_SECONDS`.
 
-### Topics and Runtime
-- `MQTT_TOPIC` (comma-separated topics supported)
-- `MQTT_SYS_TOPIC`
-- `SYS_TOPICS_ENABLED`
-- `MQTT_ONLINE_SECONDS`
-- `NODE_PURGE_SECONDS`
-- `SYS_TOPICS_LIMIT`
-- `STATS_WINDOW_SECONDS`
+The `./data` volume stores packet history and the latest neighbor snapshots across restarts. Keep it when updating. Node presence repopulates from fresh MQTT traffic after a restart.
 
-### Packet Storage
-- `PACKET_DB_PATH` (default `/data/packets.db`)
-- `PACKET_RETENTION_SECONDS` (max 24 hours)
-- `ROLE_OVERRIDES_FILE`
+## Pages and API
 
-### Battery Info
-- `BATTERYINFO_ENABLED` (default `false`)
-- `BATTERYINFO_CHANNEL_NAME`
-- `BATTERYINFO_SHOW_CHANNEL_NAME`
-- `BATTERYINFO_RETENTION_SECONDS` (default `172800`, 48 hours)
-- `BATTERYINFO_CHANNEL_KEY`
+| Path | Description |
+| --- | --- |
+| `/` | Node dashboard. |
+| `/traffic` | Traffic analysis. |
+| `/neighbors` | Neighbor graph and link table. |
+| `/batteryinfo` | Battery telemetry, when enabled. |
+| `/ws` | Public live WebSocket stream. |
+| `/snapshot`, `/stats`, `/packets`, `/neighbors/data` | HTTP data endpoints. |
 
-## Behavior Notes
+When `DASH_API_TOKEN` is set, HTTP data requests require an `X-Dashboard-Token` header, an `Authorization: Bearer <token>` header, or a `?token=<token>` query parameter. The token header name can be changed with `DASH_API_TOKEN_HEADER`.
 
-- The backend prints the running app version to the console on startup.
-- `$SYS` panel is hidden when `SYS_TOPICS_ENABLED=false`.
-- Sensitive IP/MAC values are redacted before UI/API exposure.
-- `client_version` dotted versions (for example `1.0.8.0-e52c5ed`) are preserved.
-- The traffic page uses retained packet history from SQLite across the full `PACKET_RETENTION_SECONDS` window.
-- Traffic history is rebuilt from `packets` into `traffic_events` when needed and persists across restarts.
-- `/traffic` includes retained packet rates, route/payload charts, top talkers, and burst bins.
-- `/batteryinfo` is optional, disabled by default, and only appears when `BATTERYINFO_ENABLED=true`.
-- Battery telemetry is persisted in `batteryinfo_events` and uses its own retention window via `BATTERYINFO_RETENTION_SECONDS`.
-- Battery decode uses the official `@michaelhart/meshcore-decoder` package with the configured channel key.
-- Role inference uses explicit payload roles first, then payload hints from `/status` and `/internal`, then name hints.
-- Retained `*/internal` MQTT messages are ignored for node presence so startup replay does not create ghost online nodes.
-- Node presence is in-memory and repopulates from fresh traffic after restart.
-- Share/embed metadata uses:
-  - title from `DASH_TITLE`
-  - description `Live node presence, roles, and broker telemetry.`
-- `MQTT_HOST` and `MQTT_PORT` control the actual connection target; `DASH_BROKER_HOST` only changes what the dashboard displays.
-- If `DASH_BROKER_HOST` is set, the dashboard shows it exactly as provided.
-- Favicon is rendered only when `DASH_LOGO_URL` is valid and supported.
+**The pages and WebSocket stream remain public**, including neighbor topology. The API token does not make the dashboard private.
+
+## Development
+
+From the repository root:
+
+```bash
+pip install -r requirements-dev.txt
+npm ci --prefix backend
+pytest -q
+```
+
+Node.js is needed for decoder tests. Rebuild the local application with `docker compose up -d --build`.
 
 ## Star History
 
