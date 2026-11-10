@@ -15,6 +15,7 @@
 <p align="center">
   <a href="https://mcmqttdashboard.bostonme.sh/">Live demo</a> &middot;
   <a href="#quick-start">Quick start</a> &middot;
+  <a href="./docs.md">Documentation</a> &middot;
   <a href="#configuration">Configuration</a> &middot;
   <a href="./CHANGES.MD">Changelog</a> &middot;
   <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard/issues">Report an issue</a>
@@ -95,7 +96,7 @@ The dashboard is available at the same address and port described above.
 
 ## Configuration
 
-Settings are loaded from `.env`. See [`.env.example`](./.env.example) for the complete list.
+Settings are loaded from `.env`. See [`.env.example`](./.env.example) for the complete list and the [setup and operations guide](./docs.md) for broker connections, neighbor uploads, battery telemetry, updates, and troubleshooting.
 
 | Setting | Purpose |
 | --- | --- |
