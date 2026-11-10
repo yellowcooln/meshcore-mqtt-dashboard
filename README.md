@@ -1,10 +1,28 @@
-# MQTT Dashboard
+<h1 align="center">MQTT Dashboard</h1>
 
-Live MeshCore MQTT dashboard for node activity, neighbor topology, and traffic analysis.
+<p align="center">
+  Live MeshCore node activity, neighbor topology, and traffic analysis.<br />
+  Self-hosted, with real-time updates from your MQTT broker.
+</p>
 
-**Version:** `v1.3.5.1` · [Live preview](https://mcmqttdashboard.bostonme.sh/) · [Changelog](./CHANGES.MD) · [Docker Hub](https://hub.docker.com/r/yellowcooln/meshcore-mqtt-dashboard)
+<p align="center">
+  <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard/releases"><img src="https://img.shields.io/github/v/release/yellowcooln/meshcore-mqtt-dashboard?style=flat&amp;color=0f766e" alt="Latest release" /></a>
+  <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard/actions/workflows/tests.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/yellowcooln/meshcore-mqtt-dashboard/tests.yml?branch=main&amp;style=flat&amp;label=tests" alt="Tests on main" /></a>
+  <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard/actions/workflows/docker-publish.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/yellowcooln/meshcore-mqtt-dashboard/docker-publish.yml?branch=main&amp;style=flat&amp;label=docker%20build" alt="Docker build on main" /></a>
+  <a href="https://hub.docker.com/r/yellowcooln/meshcore-mqtt-dashboard"><img src="https://img.shields.io/docker/pulls/yellowcooln/meshcore-mqtt-dashboard?style=flat&amp;logo=docker&amp;logoColor=white" alt="Docker pulls" /></a>
+</p>
 
-![Dashboard preview](./docs/example.png)
+<p align="center">
+  <a href="https://mcmqttdashboard.bostonme.sh/">Live demo</a> &middot;
+  <a href="#quick-start">Quick start</a> &middot;
+  <a href="#configuration">Configuration</a> &middot;
+  <a href="./CHANGES.MD">Changelog</a> &middot;
+  <a href="https://github.com/yellowcooln/meshcore-mqtt-dashboard/issues">Report an issue</a>
+</p>
+
+![Boston MeshCore MQTT Dashboard showing online nodes, traffic metrics, and node details](./docs/boston-example.png)
+
+<p align="center"><em>A look at the Boston Mesh deployment. Connect your own broker and customize the dashboard for your mesh.</em></p>
 
 ## Features
 
