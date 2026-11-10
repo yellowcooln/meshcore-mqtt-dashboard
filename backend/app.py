@@ -2655,7 +2655,8 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
     return
 
   tombstone_observer_id = _neighbors_observer_from_topic(topic)
-  if tombstone_observer_id and getattr(msg, "retain", False) and not msg.payload:
+  # Live forwarding may clear RETAIN even when the publisher deletes retained state.
+  if tombstone_observer_id and not msg.payload:
     neighbor_updated = _delete_neighbor_snapshot(tombstone_observer_id)
     if should_broadcast and neighbor_updated:
       _queue_broadcast(
