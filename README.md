@@ -34,21 +34,64 @@
 
 ## Quick start
 
+### Run the prebuilt Docker image
+
+Prebuilt images are available on [Docker Hub](https://hub.docker.com/r/yellowcooln/meshcore-mqtt-dashboard)—no local build required:
+
+- **`yellowcooln/meshcore-mqtt-dashboard:latest`** — production image from `main`.
+- **`yellowcooln/meshcore-mqtt-dashboard:dev`** — development image from `dev`.
+
+Install Docker with the Compose plugin, then download the configuration template into a new directory:
+
+```bash
+mkdir meshcore-mqtt-dashboard
+cd meshcore-mqtt-dashboard
+curl -fsSL https://raw.githubusercontent.com/yellowcooln/meshcore-mqtt-dashboard/main/.env.example -o .env
+```
+
+Edit `.env` with your broker address, credentials, and topics. `MQTT_HOST` must be reachable from the container; `localhost` refers to the container itself.
+
+Create `docker-compose.yaml` alongside `.env`:
+
+```yaml
+services:
+  mqtt-dashboard:
+    image: yellowcooln/meshcore-mqtt-dashboard:latest
+    ports:
+      - "${WEB_PORT:-8081}:8081"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+```
+
+Pull the image and start the dashboard:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Open **http://localhost:8081**, or use your server's address and configured `WEB_PORT`. Keep the `./data` directory when updating; it holds persisted history and neighbor snapshots.
+
+### Build from source instead
+
+For local changes, clone the repository and use its included build-based Compose file:
+
 ```bash
 git clone https://github.com/yellowcooln/meshcore-mqtt-dashboard
 cd meshcore-mqtt-dashboard
 cp .env.example .env
 ```
 
-Edit `.env` with your broker address, credentials, and topics. `MQTT_HOST` must be reachable from the container; `localhost` refers to the container itself.
+Configure `.env` as above, then build and start:
 
 ```bash
 docker compose up -d --build
 ```
 
-Open **http://localhost:8081**, or use your server's address and configured `WEB_PORT`.
-
-To use a prebuilt image, replace `build: ./backend` in `docker-compose.yaml` with `image: yellowcooln/meshcore-mqtt-dashboard:latest`, then run `docker compose up -d`. Use the `:dev` tag for development builds.
+The dashboard is available at the same address and port described above.
 
 ## Configuration
 
