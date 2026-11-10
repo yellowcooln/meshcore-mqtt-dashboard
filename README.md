@@ -1,4 +1,4 @@
-<h1 align="center">MQTT Dashboard</h1>
+<h1 align="center">MeshCore MQTT Dashboard</h1>
 
 <p align="center">
   Live MeshCore node activity, neighbor topology, and traffic analysis.<br />
