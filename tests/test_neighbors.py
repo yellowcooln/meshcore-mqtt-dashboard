@@ -4,6 +4,8 @@ import sqlite3
 import subprocess
 from types import SimpleNamespace
 
+import pytest
+
 import app as dashboard_app
 
 
@@ -181,7 +183,10 @@ def test_mqtt_neighbors_message_updates_topology_and_api(client, monkeypatch):
   }
 
 
-def test_retained_neighbors_tombstone_removes_memory_and_persistence(client):
+@pytest.mark.parametrize("retain", [True, False, None], ids=["retained", "live", "missing-flag"])
+def test_retained_neighbors_tombstone_removes_memory_and_persistence(client, monkeypatch, retain):
+  # This fixture provisions neighbor storage only; wire tests cover packet storage too.
+  monkeypatch.setattr(dashboard_app, "PACKET_RETENTION_SECONDS", 0)
   previous_db = dashboard_app.packet_db
   previous_snapshots = dashboard_app.neighbor_snapshots
   try:
@@ -201,7 +206,7 @@ def test_retained_neighbors_tombstone_removes_memory_and_persistence(client):
       SimpleNamespace(
         topic=f"meshcore/BOS/{OBSERVER_ID}/neighbors",
         payload=b"",
-        retain=True,
+        **({"retain": retain} if retain is not None else {}),
       ),
     )
 
@@ -210,11 +215,66 @@ def test_retained_neighbors_tombstone_removes_memory_and_persistence(client):
       "SELECT COUNT(*) FROM neighbor_snapshots"
     ).fetchone()[0]
     assert row_count == 0
+    dashboard_app.neighbor_snapshots = {}
+    dashboard_app._load_neighbor_snapshots()
+    assert OBSERVER_ID not in dashboard_app.neighbor_snapshots
   finally:
     if dashboard_app.packet_db is not None and dashboard_app.packet_db is not previous_db:
       dashboard_app.packet_db.close()
     dashboard_app.packet_db = previous_db
     dashboard_app.neighbor_snapshots = previous_snapshots
+
+
+def test_live_neighbor_tombstone_broadcasts_removal_and_preserves_other_observers(client, monkeypatch):
+  second_observer = "d4" * 32
+  for observer in (OBSERVER_ID, second_observer):
+    payload = _neighbors_payload()
+    payload["origin_id"] = observer
+    snapshot = dashboard_app._normalize_neighbors_snapshot(
+      f"meshcore/BOS/{observer}/neighbors", payload, 2_000.0
+    )
+    assert dashboard_app._store_neighbor_snapshot(snapshot)
+  events = []
+  monkeypatch.setattr(dashboard_app, "_has_ws_clients", lambda: True)
+  monkeypatch.setattr(dashboard_app, "_queue_broadcast", events.append)
+  message = SimpleNamespace(
+    topic=f"meshcore/BOS/{OBSERVER_ID}/neighbors", payload=b"", retain=False
+  )
+
+  dashboard_app.mqtt_on_message(None, None, message)
+
+  assert set(dashboard_app.neighbor_snapshots) == {second_observer}
+  assert len(events) == 1
+  assert events[0]["type"] == "neighbors_update"
+  topology = events[0]["neighbors"]
+  assert {item["observer_id"] for item in topology["observers"]} == {second_observer}
+  assert all(link["observer_id"] != OBSERVER_ID for link in topology["links"])
+  assert dashboard_app.message_total == 0
+  assert OBSERVER_ID not in dashboard_app.nodes
+
+  dashboard_app.mqtt_on_message(None, None, message)
+  assert len(events) == 1
+  assert set(dashboard_app.neighbor_snapshots) == {second_observer}
+
+
+@pytest.mark.parametrize("topic,payload", [
+  (f"meshcore/BOS/{OBSERVER_ID}/status", b""),
+  ("meshcore/BOS/not-a-public-key/neighbors", b""),
+  (f"other/BOS/{OBSERVER_ID}/neighbors", b""),
+  (f"meshcore/BOS/{OBSERVER_ID}/neighbors", b"{}"),
+  (f"meshcore/BOS/{OBSERVER_ID}/neighbors", b" "),
+])
+def test_non_tombstone_messages_preserve_neighbor_snapshot(client, topic, payload):
+  snapshot = dashboard_app._normalize_neighbors_snapshot(
+    f"meshcore/BOS/{OBSERVER_ID}/neighbors", _neighbors_payload(), 2_000.0
+  )
+  assert dashboard_app._store_neighbor_snapshot(snapshot)
+
+  dashboard_app.mqtt_on_message(None, None, SimpleNamespace(
+    topic=topic, payload=payload, retain=False
+  ))
+
+  assert dashboard_app.neighbor_snapshots[OBSERVER_ID] == snapshot
 
 
 def test_neighbor_snapshots_persist_and_reload():

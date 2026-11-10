@@ -30,7 +30,7 @@ BATTERYINFO_PATH = os.path.join(STATIC_DIR, "batteryinfo.html")
 NEIGHBORS_PATH = os.path.join(STATIC_DIR, "neighbors.html")
 BATTERYINFO_DECODER_PATH = os.path.join(ROOT_DIR, "scripts", "batteryinfo-decoder.cjs")
 DATA_DIR = os.path.join(os.path.dirname(ROOT_DIR), "data")
-APP_VERSION = "v1.3.5"
+APP_VERSION = "v1.3.5.1"
 
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
@@ -2655,7 +2655,8 @@ def mqtt_on_message(client, userdata, msg: mqtt.MQTTMessage):
     return
 
   tombstone_observer_id = _neighbors_observer_from_topic(topic)
-  if tombstone_observer_id and getattr(msg, "retain", False) and not msg.payload:
+  # Live forwarding may clear RETAIN even when the publisher deletes retained state.
+  if tombstone_observer_id and not msg.payload:
     neighbor_updated = _delete_neighbor_snapshot(tombstone_observer_id)
     if should_broadcast and neighbor_updated:
       _queue_broadcast(

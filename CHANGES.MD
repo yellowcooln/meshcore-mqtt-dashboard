@@ -1,5 +1,9 @@
 # Changes
 
+## v1.3.5.1 - 2026-11-10
+- Fixed retained neighbors-topic deletions leaving stale topology when live MQTT delivery clears the retain flag; removed observers are cleared from memory, SQLite, and connected clients.
+- Preserved other observers and normal packet ingestion when handling repeated deletions.
+
 ## v1.3.5 - 2026-11-09
 - Unified all pages with the Neighbors layout, shared light/dark themes, and responsive styling.
 - Replaced repeated full-history traffic scans with incremental summaries while preserving retained history, deduplication, and chart calculations.

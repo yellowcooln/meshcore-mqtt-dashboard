@@ -2,7 +2,7 @@
 
 Live MeshCore MQTT dashboard for node activity, neighbor topology, and traffic analysis.
 
-**Version:** `v1.3.5` · [Live preview](https://mcmqttdashboard.bostonme.sh/) · [Changelog](./CHANGES.MD) · [Docker Hub](https://hub.docker.com/r/yellowcooln/meshcore-mqtt-dashboard)
+**Version:** `v1.3.5.1` · [Live preview](https://mcmqttdashboard.bostonme.sh/) · [Changelog](./CHANGES.MD) · [Docker Hub](https://hub.docker.com/r/yellowcooln/meshcore-mqtt-dashboard)
 
 ![Dashboard preview](./docs/example.png)
 
