@@ -1,6 +1,7 @@
 {
   "name": "mqtt-dashboard-backend",
   "private": true,
+  "license": "GPL-3.0-only",
   "engines": {
     "node": ">=24.0.0 <25.0.0"
   },

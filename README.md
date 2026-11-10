@@ -143,6 +143,14 @@ pytest -q
 
 Node.js is needed for decoder tests. Rebuild the local application with `docker compose up -d --build`.
 
+## License
+
+Copyright (c) 2026 yellowcooln and contributors.
+
+Licensed under the [GNU General Public License version 3 only](./LICENSE) (`GPL-3.0-only`). You may use, modify, and redistribute this software under its terms. Distributed modified versions must be licensed under GPL version 3 and include the corresponding source as required by the license. This software comes without warranty.
+
+Third-party dependencies and assets retain their own licenses and notices.
+
 ## About these projects
 
 I build these projects with the help of AI when I see a need for software I want to use myself. The goal is to make something useful, run it on my own systems, and share it with anyone else who might find it helpful.
