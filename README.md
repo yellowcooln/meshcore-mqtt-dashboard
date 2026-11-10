@@ -143,11 +143,11 @@ pytest -q
 
 Node.js is needed for decoder tests. Rebuild the local application with `docker compose up -d --build`.
 
-## A note from the developer
+## About these projects
 
 I build these projects with the help of AI when I see a need for software I want to use myself. The goal is to make something useful, run it on my own systems, and share it with anyone else who might find it helpful.
 
-This is something I do for fun, in my free time outside of work and family. If you find these tools useful and would like to support the time that goes into them, a little support on [Ko-fi](https://ko-fi.com/yellowcooln) is always appreciated. No pressure—using the software, reporting bugs, and contributing ideas helps too.
+This is something I do for fun, in my free time outside of work and family. If you find these tools useful and would like to support the time that goes into them, a little support on [Ko-fi](https://ko-fi.com/yellowcooln) is always appreciated. No pressure. Using the software, reporting bugs, and contributing ideas helps too.
 
 ## Star History
 
