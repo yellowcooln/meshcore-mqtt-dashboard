@@ -1,4 +1,4 @@
-FROM node:24.22.2-trixie-slim AS node-dependencies
+FROM node:24.22.3-trixie-slim AS node-dependencies
 WORKDIR /dependencies
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --fund=false
